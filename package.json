@@ -3,7 +3,7 @@
   "productName": "jotlet",
   "version": "1.0.0",
   "private": true,
-  "description": "My Electron application description",
+  "description": "An offline desktop app for events and their timelines",
   "keywords": [],
   "license": "MIT",
   "author": {
@@ -18,7 +18,8 @@
     "release": "electron-forge release",
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt --write",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/events.test.ts tests/storage.test.ts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",
