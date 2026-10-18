@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="file.txt">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/node_modules/cross-zip/test/content/file.txt.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

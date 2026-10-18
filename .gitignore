@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Electron Forge and Vite output
+.vite/
+out/
+dist/
+vite.config.*.timestamp-*
+
+# Caches and test output
+.cache/
+.npm/
+.oxlintcache
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Logs and diagnostics
+logs/
+*.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Local environment variables
+.env
+.env.*
+!.env.example
+
+# OS and editor temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
