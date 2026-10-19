@@ -1,5 +1,5 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
-import { MakerSquirrel } from '@electron-forge/maker-squirrel';
+import { MakerNsis } from './maker-nsis.mts';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
@@ -15,7 +15,7 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({ setupIcon: './assets/jotlet.ico' }),
+    new MakerNsis({}),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({ options: { icon: './assets/jotlet.png' } }),
     new MakerDeb({ options: { icon: './assets/jotlet.png' } }),

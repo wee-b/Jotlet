@@ -17,6 +17,7 @@ import { makeBackup } from './events.ts';
 import type { Result } from './events.ts';
 import { parseJotletBackup } from './jotlet-backup.ts';
 import type { JotletBackup } from './jotlet-backup.ts';
+import type { InstallationData } from './installation.ts';
 
 export interface DataLocation {
   directory: string;
@@ -95,6 +96,58 @@ export class DataLocationManager {
       );
     }
     return target;
+  }
+  async applyInstallation(installation: InstallationData) {
+    const appliedPath = path.join(
+      this.defaultDirectory,
+      'installation-applied.json',
+    );
+    try {
+      const applied = JSON.parse(await readFile(appliedPath, 'utf8'));
+      // Settings changes after the first launch take precedence over installer defaults.
+      if (applied.token === installation.token) return;
+    } catch (error) {
+      if (!missing(error)) throw error;
+    }
+    const target = installation.directory;
+    await mkdir(target, { recursive: true });
+    const canonicalTarget = await realpath(target);
+    await mkdir(this.location.directory, { recursive: true });
+    const canonicalSource = await realpath(this.location.directory);
+    if (canonicalTarget !== canonicalSource) {
+      const hasFile = async (name: string) => {
+        try {
+          await access(path.join(target, name));
+          return true;
+        } catch (error) {
+          if (missing(error)) return false;
+          throw error;
+        }
+      };
+      const [hasEvents, hasCalendar] = await Promise.all([
+        hasFile('notes.json'),
+        hasFile('calendar.json'),
+      ]);
+      if (hasEvents || hasCalendar) {
+        const [events, schedules] = await Promise.all([
+          this.events.load(),
+          this.schedules.load(),
+        ]);
+        if (!hasEvents || !hasCalendar || events.length || schedules.length)
+          throw new Error(
+            '安装时选择的目录已有数据，无法自动覆盖或合并。请保留现有数据并重新选择空文件夹。',
+          );
+        await this.commitDirectory(canonicalTarget);
+      } else {
+        await this.relocate(canonicalTarget);
+      }
+    }
+    await mkdir(this.defaultDirectory, { recursive: true });
+    await writeFile(`${appliedPath}.tmp`, JSON.stringify(installation), {
+      encoding: 'utf8',
+      flush: true,
+    });
+    await rename(`${appliedPath}.tmp`, appliedPath);
   }
   private async commitDirectory(target: string) {
     const nextEvents = new EventsStore(path.join(target, 'notes.json'));

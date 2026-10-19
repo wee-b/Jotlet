@@ -1,7 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import started from 'electron-squirrel-startup';
 import { EventsStore } from './storage';
 import { makeBackup, parseEvent, toMarkdown } from './events';
 import type { Result } from './events';
@@ -9,11 +8,12 @@ import { ScheduleStore } from './schedule-storage';
 import { parseSchedule } from './schedules';
 import { DataLocationManager } from './data-location';
 import { makeJotletBackup, parseJotletBackup } from './jotlet-backup';
+import { readInstallation, writeInstallationHint } from './installation';
 
 if (process.platform === 'win32')
   app.setAppUserModelId('com.squirrel.jotlet.jotlet');
 
-if (started || !app.requestSingleInstanceLock()) app.quit();
+if (!app.requestSingleInstanceLock()) app.quit();
 
 let mainWindow: BrowserWindow | null = null;
 let store: EventsStore;
@@ -21,6 +21,16 @@ let scheduleStore: ScheduleStore;
 let dataLocation: DataLocationManager;
 let dataQueue: Promise<unknown> = Promise.resolve();
 let fileDialogOpen = false;
+let installationHint: string | undefined;
+async function updateInstallationHint() {
+  if (installationHint)
+    await writeInstallationHint(
+      installationHint,
+      dataLocation.location.directory,
+    ).catch((error) =>
+      console.error('Cannot update installer directory hint:', error),
+    );
+}
 
 function registerHandlers() {
   const handle = <T>(
@@ -77,6 +87,7 @@ function registerHandlers() {
     });
     if (selection.canceled || !selection.filePaths[0]) return null;
     const location = await dataLocation.relocate(selection.filePaths[0]);
+    await updateInstallationHint();
     store = dataLocation.events;
     scheduleStore = dataLocation.schedules;
     return location;
@@ -129,6 +140,7 @@ function registerHandlers() {
         destination.filePaths[0],
         archive,
       );
+      await updateInstallationHint();
       store = dataLocation.events;
       scheduleStore = dataLocation.schedules;
       return {
@@ -284,6 +296,19 @@ app
   .then(async () => {
     dataLocation = new DataLocationManager(app.getPath('userData'));
     await dataLocation.initialize();
+    if (app.isPackaged && process.platform === 'win32') {
+      const installation = await readInstallation(
+        path.join(path.dirname(app.getPath('exe')), 'jotlet-install.ini'),
+      );
+      if (installation) {
+        await dataLocation.applyInstallation(installation);
+        installationHint = path.join(
+          path.dirname(app.getPath('exe')),
+          'jotlet-data.ini',
+        );
+        await updateInstallationHint();
+      }
+    }
     store = dataLocation.events;
     scheduleStore = dataLocation.schedules;
     registerHandlers();
