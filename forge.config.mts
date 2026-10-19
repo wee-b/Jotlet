@@ -11,7 +11,12 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: './assets/jotlet',
-    extraResource: ['./assets/jotlet.png', './assets/jotlet.ico'],
+    extraResource: [
+      './assets/jotlet.png',
+      './assets/jotlet.ico',
+      './LICENSE',
+      './NOTICE',
+    ],
   },
   rebuildConfig: {},
   makers: [

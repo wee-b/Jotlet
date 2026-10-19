@@ -37,8 +37,10 @@ VIAddVersionKey /LANG=2052 "LegalCopyright" "Jotlet"
 !define MUI_BGCOLOR "F8F9F6"
 !define MUI_TEXTCOLOR "29372F"
 !define MUI_DIRECTORYPAGE_TEXT_TOP "选择 Jotlet 的程序安装文件夹。数据保存目录将在下一步单独设置。"
-!define MUI_PAGE_CUSTOMFUNCTION_LEAVE ValidateInstallDirectory
 Page custom ModePage ModeLeave
+!define MUI_LICENSEPAGE_TEXT_TOP "Jotlet 仅限非商业用途，请阅读许可条款。"
+!insertmacro MUI_PAGE_LICENSE "${PROJECT_LICENSE}"
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE ValidateInstallDirectory
 !insertmacro MUI_PAGE_DIRECTORY
 Page custom DataPage DataLeave
 !insertmacro MUI_PAGE_INSTFILES

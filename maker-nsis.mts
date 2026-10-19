@@ -86,6 +86,7 @@ export async function buildInstaller(options: {
     `/DPAYLOAD_DIR=${dir}`,
     `/DOUTPUT_FILE=${output}`,
     `/DICON_FILE=${path.join(root, 'assets', 'jotlet.ico')}`,
+    `/DPROJECT_LICENSE=${path.join(root, 'LICENSE')}`,
     `/DUNINSTALL_MANIFEST=${manifest}`,
   ];
   if (testId) args.push(`/DTEST_ID=${testId}`);
