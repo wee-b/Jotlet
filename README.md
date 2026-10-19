@@ -50,6 +50,8 @@
 
 ## 开发
 
+应用图标沿用绿色叶片标识，矢量源文件为 `assets/jotlet.svg`。修改后运行 `npm run icons` 生成 PNG、多尺寸 ICO 与 ICNS；窗口、可执行文件、安装包和网页图标均使用这套资源。
+
 ```sh
 npm ci
 npm start

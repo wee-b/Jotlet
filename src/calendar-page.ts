@@ -128,6 +128,8 @@ export function createCalendar(options: Options) {
   let schedules: Schedule[] = [];
 
   let linkedOnly = false;
+  let allDayContext = '';
+  let allDayExpanded = false;
   let ready = false;
   let busy = false;
   let editing: Schedule | null = null;
@@ -361,7 +363,32 @@ export function createCalendar(options: Options) {
     );
     const content = $('#calendar-content');
     content.className = 'week-view';
-    content.innerHTML = `<div class="week-date-row"><span class="week-timezone">GMT${-new Date().getTimezoneOffset() / 60 >= 0 ? '+' : ''}${-new Date().getTimezoneOffset() / 60}</span>${days.map((day) => `<button class="week-date${dateKey(day) === today() ? ' is-today' : ''}${dateKey(day) === dateKey(selected) ? ' is-selected' : ''}" data-week-day="${dateKey(day)}"><span>${weekdays[day.getDay()]}</span><strong>${day.getDate()}</strong></button>`).join('')}</div><div class="week-all-day"><span>全天</span>${days.map((day) => `<div data-all-day="${dateKey(day)}"></div>`).join('')}</div><div class="week-scroll"><div class="week-grid"><div class="week-hours">${Array.from({ length: 24 }, (_, hour) => `<span style="top:${hour * 64}px">${String(hour).padStart(2, '0')}:00</span>`).join('')}</div>${days.map((day) => `<div class="week-column${dateKey(day) === today() ? ' is-today' : ''}" data-column="${dateKey(day)}"></div>`).join('')}<div class="current-time-line" hidden><span></span></div></div></div>`;
+    const hasAllDay = days.some((day) =>
+      itemsFor(day).some((item) => item.allDay),
+    );
+    const context = `${dateKey(days[0])}:${linkedOnly}:${hasAllDay}`;
+    if (context !== allDayContext) {
+      allDayContext = context;
+      allDayExpanded = hasAllDay;
+    }
+    content.innerHTML = `<div class="week-date-row"><div class="week-timezone"><span>GMT${-new Date().getTimezoneOffset() / 60 >= 0 ? '+' : ''}${-new Date().getTimezoneOffset() / 60}</span><button type="button" id="toggle-all-day" aria-controls="week-all-day">全天 ${svg('down')}</button></div>${days.map((day) => `<button class="week-date${dateKey(day) === today() ? ' is-today' : ''}${dateKey(day) === dateKey(selected) ? ' is-selected' : ''}" data-week-day="${dateKey(day)}"><span>${weekdays[day.getDay()]}</span><strong>${day.getDate()}</strong></button>`).join('')}</div><div class="week-all-day" id="week-all-day"><span>全天</span>${days.map((day) => `<div data-all-day="${dateKey(day)}"></div>`).join('')}</div><div class="week-scroll"><div class="week-grid"><div class="week-hours">${Array.from({ length: 24 }, (_, hour) => `<span style="top:${hour * 64}px">${String(hour).padStart(2, '0')}:00</span>`).join('')}</div>${days.map((day) => `<div class="week-column${dateKey(day) === today() ? ' is-today' : ''}" data-column="${dateKey(day)}"></div>`).join('')}<div class="current-time-line" hidden><span></span></div></div></div>`;
+    const allDayToggle =
+      content.querySelector<HTMLButtonElement>('#toggle-all-day')!;
+    const allDayRow = content.querySelector<HTMLElement>('#week-all-day')!;
+    const updateAllDayVisibility = () => {
+      allDayRow.hidden = !allDayExpanded;
+      allDayToggle.setAttribute('aria-expanded', String(allDayExpanded));
+      allDayToggle.setAttribute(
+        'aria-label',
+        allDayExpanded ? '收起全天日程' : '展开全天日程',
+      );
+      allDayToggle.title = allDayExpanded ? '收起全天日程' : '展开全天日程';
+    };
+    updateAllDayVisibility();
+    allDayToggle.addEventListener('click', () => {
+      allDayExpanded = !allDayExpanded;
+      updateAllDayVisibility();
+    });
     content.querySelectorAll<HTMLElement>('[data-week-day]').forEach((button) =>
       button.addEventListener('click', () => {
         selected = new Date(`${button.dataset.weekDay}T00:00:00`);

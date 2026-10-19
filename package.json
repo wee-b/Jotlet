@@ -12,6 +12,7 @@
   },
   "main": ".vite/build/main.cjs",
   "scripts": {
+    "icons": "electron scripts/generate-icons.cjs",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",

@@ -1,5 +1,6 @@
 :root {
   --app-topbar-height: 40px;
+  --app-brand-mark-size: 26px;
   --cal-accent: var(--green);
   --cal-ink: #29372f;
   --cal-muted: var(--muted);
@@ -26,7 +27,10 @@ body {
   height: var(--app-topbar-height);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 12px;
+  padding-left: calc(
+    (var(--app-topbar-height) - 1px - var(--app-brand-mark-size)) / 2
+  );
   gap: 38px;
   border-bottom: 1px solid var(--cal-line);
   background: #f8f9f6;
@@ -104,8 +108,8 @@ body {
 .cal-brand-mark {
   display: grid;
   place-items: center;
-  height: 26px;
-  width: 26px;
+  height: var(--app-brand-mark-size);
+  width: var(--app-brand-mark-size);
   border-radius: 8px;
   color: #fff;
   background: var(--cal-accent);
@@ -893,9 +897,12 @@ body {
 .week-all-day {
   display: grid;
   grid-template-columns: 64px repeat(7, minmax(0, 1fr));
-  padding-right: 8px;
+  /* Use the same native scrollbar gutter as the timed grid at every DPI. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 .week-date-row {
+  overflow-y: hidden;
   min-height: 82px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--cal-line);
@@ -904,9 +911,33 @@ body {
   font-size: 9px;
   color: #a4ae99;
   display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+#toggle-all-day {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-end;
-  padding-bottom: 12px;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 4px;
+  font-size: 9px;
+  color: #8e9c81;
+}
+#toggle-all-day:hover {
+  background: #e7ecdf;
+  color: var(--cal-accent);
+}
+#toggle-all-day .cal-icon {
+  width: 11px;
+  height: 11px;
+  transform: rotate(-90deg);
+}
+#toggle-all-day[aria-expanded='true'] .cal-icon {
+  transform: none;
 }
 .week-date {
   padding: 2px 12px 13px;
@@ -967,6 +998,7 @@ body {
   height: 22px;
 }
 .week-scroll {
+  scrollbar-gutter: stable;
   overflow-y: scroll;
   overflow-x: hidden;
   flex: 1;
@@ -1490,7 +1522,6 @@ body {
   }
   .app-topbar {
     gap: 36px;
-    padding: 0 23px;
   }
   .month-schedule > .schedule-time {
     display: none;
@@ -1530,7 +1561,6 @@ body {
     display: none;
   }
   .app-topbar {
-    padding: 0 15px;
     gap: 22px;
   }
   .cal-brand {

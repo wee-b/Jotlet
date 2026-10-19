@@ -10,6 +10,9 @@ import { parseSchedule } from './schedules';
 import { DataLocationManager } from './data-location';
 import { makeJotletBackup, parseJotletBackup } from './jotlet-backup';
 
+if (process.platform === 'win32')
+  app.setAppUserModelId('com.squirrel.jotlet.jotlet');
+
 if (started || !app.requestSingleInstanceLock()) app.quit();
 
 let mainWindow: BrowserWindow | null = null;
@@ -210,7 +213,11 @@ function registerHandlers() {
 }
 
 function createWindow() {
+  const iconName = process.platform === 'win32' ? 'jotlet.ico' : 'jotlet.png';
   mainWindow = new BrowserWindow({
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, iconName)
+      : path.join(app.getAppPath(), 'assets', iconName),
     width: 860,
     height: 580,
     minWidth: 860,

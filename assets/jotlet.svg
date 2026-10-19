@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <title>Jotlet</title>
+  <rect x="12" y="12" width="488" height="488" rx="120" fill="#32684e"/>
+  <g transform="translate(68 68) scale(15.6667)" fill="none" stroke="#f8f9f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 4C8 2 3 8 5 14s13 6 15-10Z"/>
+    <path d="M5 20 14 10"/>
+  </g>
+</svg>
