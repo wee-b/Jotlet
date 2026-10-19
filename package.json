@@ -19,7 +19,7 @@
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt --write",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/events.test.ts tests/storage.test.ts tests/schedules.test.ts tests/calendar-selection.test.ts tests/preferences.test.ts"
+    "test": "node --experimental-strip-types --test tests/events.test.ts tests/storage.test.ts tests/schedules.test.ts tests/calendar-selection.test.ts tests/preferences.test.ts tests/data-location.test.ts tests/jetlet-backup.test.ts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

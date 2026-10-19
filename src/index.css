@@ -449,7 +449,7 @@ h1 {
   text-align: left;
   display: block;
   width: 100%;
-  padding: 18px 14px 16px;
+  padding: 12px 14px 10px;
   border: 1px solid transparent;
   border-bottom-color: #ebeee5;
   margin-bottom: 5px;
@@ -483,15 +483,14 @@ h1 {
 .note-card p {
   color: #98a08f;
   font-size: 11px;
-  line-height: 1.8;
-  margin: 9px 0 14px;
+  line-height: 1.5;
+  margin: 6px 0 8px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  min-height: 36px;
+  white-space: normal;
 }
 .card-footer {
   display: flex;
@@ -984,12 +983,16 @@ dialog .info-small {
   background: #eef2e7;
 }
 .card-range {
-  display: grid;
-  gap: 5px;
-  margin: 14px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0;
   font-size: 9px;
   color: #8e9c81;
   line-height: 1.5;
+}
+.card-range span {
+  white-space: nowrap;
 }
 .card-status {
   display: flex;
@@ -1033,11 +1036,6 @@ dialog .info-small {
   font-weight: 400;
   color: #9ba791;
   margin-left: 8px;
-}
-.timeline-heading p {
-  font-size: 10px;
-  color: #a4ae99;
-  margin: 8px 0 0;
 }
 .timeline-heading .primary {
   padding: 9px 12px;
@@ -1306,9 +1304,6 @@ dialog .form-error {
   }
   .timeline-heading .primary {
     padding: 8px;
-  }
-  .timeline-heading p {
-    font-size: 9px;
   }
 }
 @media (max-height: 720px) {

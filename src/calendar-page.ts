@@ -14,6 +14,7 @@ import type { EventRecord, Result } from './events';
 import { beginTimeSelection } from './calendar-selection';
 import { loadPreferences, savePreferences } from './preferences';
 import { createSettings } from './settings-page';
+import { createWindowControls } from './window-controls';
 
 const paths: Record<string, string> = {
   calendar:
@@ -77,7 +78,7 @@ export function createCalendar(options: Options) {
   const oldApp = document.querySelector<HTMLElement>('#app')!;
   const header = document.createElement('header');
   header.className = 'app-topbar';
-  header.innerHTML = `<a class="cal-brand" href="#" aria-label="Jotlet 日历首页"><span class="cal-brand-mark">${svg('leaf')}</span>Jotlet<span class="cal-brand-period">.</span></a><nav class="app-pages" aria-label="页面导航"><button data-page="calendar" class="active">${svg('calendar')}日历</button><button data-page="events">${svg('timeline')}事件追踪</button></nav><div class="topbar-right"><span class="cal-local"><i></i>本地保存</span><span class="topbar-separator"></span><button class="cal-primary" id="create-schedule" disabled>${svg('plus')}创建日程</button></div>`;
+  header.innerHTML = `<a class="cal-brand" href="#" aria-label="Jotlet 日历首页"><span class="cal-brand-mark">${svg('leaf')}</span>Jotlet<span class="cal-brand-period">.</span></a><nav class="app-pages" aria-label="页面导航"><button data-page="calendar" class="active">${svg('calendar')}日历</button><button data-page="events">${svg('timeline')}事件</button></nav><div class="topbar-right"><span class="cal-local"><i></i>本地保存</span><span class="topbar-separator"></span><button class="cal-primary" id="create-schedule" disabled>${svg('plus')}创建日程</button></div>`;
   const root = document.createElement('div');
   root.id = 'calendar-app';
   root.innerHTML = `
@@ -109,6 +110,7 @@ export function createCalendar(options: Options) {
   deleteDialog.innerHTML =
     '<h2 id="schedule-delete-title">删除这个日程？</h2><p>此操作无法撤销，关联的事件和时间线会保留。</p><p class="schedule-form-error" id="schedule-delete-error" role="alert" hidden></p><div><button class="cal-secondary" id="cancel-schedule-delete">取消</button><button class="cal-primary cal-delete-button" id="confirm-schedule-delete">删除日程</button></div>';
   document.body.prepend(header);
+  createWindowControls(header, options.notify);
   const calendarActions = header.querySelector<HTMLElement>('.topbar-right')!;
   calendarActions.className = 'calendar-page-actions';
   root.querySelector('.calendar-title-group')!.after(calendarActions);
@@ -143,7 +145,7 @@ export function createCalendar(options: Options) {
     back: () => {
       void navigate('calendar');
     },
-    openData: () => $<HTMLDialogElement>('#info-dialog').showModal(),
+    beforeDataChange: options.beforeNavigate,
   });
   for (const anchor of [$('.calendar-storage'), $('.sidebar-footer')]) {
     const button = document.createElement('button');
@@ -173,7 +175,25 @@ export function createCalendar(options: Options) {
     const button = document.createElement('button');
     button.className = `${type} schedule-color-${item.color}`;
     button.dataset.scheduleId = item.id;
-    button.title = `${item.title}\n${item.allDay ? '全天' : `${timeLabel(item.start)} – ${timeLabel(item.end)}`}${item.description ? `\n${item.description}` : ''}`;
+    const linkedEvent = options
+      .getEvents()
+      .find((event) => event.id === item.eventId);
+    const linkedName = item.eventId
+      ? linkedEvent
+        ? linkedEvent.title.trim() || '未命名事件'
+        : '关联事件已删除'
+      : '';
+    button.classList.toggle('has-linked-event', !!linkedName);
+    button.title = `${item.title}\n${item.allDay ? '全天' : `${timeLabel(item.start)} – ${timeLabel(item.end)}`}${linkedName ? `\n关联事件：${linkedName}` : ''}${item.description ? `\n${item.description}` : ''}`;
+    button.setAttribute('aria-label', button.title);
+    const association = document.createElement('span');
+    if (linkedName) {
+      association.className = 'schedule-linked-event';
+      association.innerHTML = svg('link');
+      const label = document.createElement('span');
+      label.textContent = linkedName;
+      association.append(label);
+    }
     const name = document.createElement('strong');
     name.textContent = item.title;
     if (type === 'agenda-item') {
@@ -186,12 +206,14 @@ export function createCalendar(options: Options) {
         ? '全天日程'
         : `${timeLabel(item.start)} – ${timeLabel(item.end)}`;
       details.append(name, subtitle);
+      if (linkedName) details.append(association);
       button.append(time, details);
     } else {
       const time = document.createElement('span');
+      time.className = 'schedule-time';
       time.textContent = item.allDay ? '全天' : timeLabel(item.start);
       button.append(name, time);
-      if (item.eventId) button.insertAdjacentHTML('beforeend', svg('link'));
+      if (linkedName) button.append(association);
     }
     button.addEventListener('click', () =>
       openSchedule(new Date(item.start), item),
@@ -406,7 +428,13 @@ export function createCalendar(options: Options) {
           const startDate = new Date(entry.start);
           const minute = startDate.getHours() * 60 + startDate.getMinutes();
           button.style.top = `${(minute / 60) * 64}px`;
-          button.style.height = `${Math.max(21, ((entry.end - entry.start) / 3_600_000) * 64 - 2)}px`;
+          const height = Math.max(
+            21,
+            ((entry.end - entry.start) / 3_600_000) * 64 - 2,
+          );
+          button.style.height = `${height}px`;
+          button.classList.toggle('is-compact', height < 50);
+          button.classList.toggle('is-tiny', height < 28);
           button.style.left = `calc(${(entry.lane / laneEnds.length) * 100}% + 3px)`;
           button.style.width = `calc(${100 / laneEnds.length}% - 6px)`;
           column.append(button);
@@ -865,5 +893,12 @@ export function createCalendar(options: Options) {
     }
   }
   void initialize();
-  return { refresh: render };
+  return {
+    refresh: render,
+    replaceSchedules(items: Schedule[]) {
+      schedules = items;
+      render();
+      settings.refresh();
+    },
+  };
 }

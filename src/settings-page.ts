@@ -7,7 +7,7 @@ interface SettingsOptions {
   getPreferences(): Preferences;
   save(preferences: Preferences): void;
   back(): void;
-  openData(): void;
+  beforeDataChange(): Promise<void>;
 }
 
 export function createSettings(options: SettingsOptions) {
@@ -29,8 +29,14 @@ export function createSettings(options: SettingsOptions) {
         )
         .join('')}</fieldset></div>
     </section><div class="settings-actions"><button class="cal-text-button" type="button" id="settings-reset">恢复默认</button><span id="settings-status" role="status" aria-live="polite"></span><button class="cal-primary" type="submit">保存设置</button></div></form>
-    <section class="settings-card settings-data"><div><h2>数据与备份</h2><p>日程与事件保存在本机，离线也可使用。</p></div><button class="cal-secondary" id="settings-data">查看数据说明</button></section><footer class="settings-footer">Jotlet <span>让每件事，都有迹可循。</span></footer></div>`;
+    <section class="settings-card settings-data"><div class="settings-card-heading"><h2>数据与备份</h2><p>导出 .jetlet 完整备份，包含事件、记录、日程与关联关系。导入时选择新的保存文件夹，成功后自动切换。</p></div><div id="settings-transfer-actions" class="settings-data-tools"></div><div class="settings-storage"><div class="settings-row-label">文件保存位置<span>事件、日程和自动备份保存在此文件夹</span></div><code id="settings-storage-path">正在读取…</code><div class="settings-storage-actions"><p>更换文件夹时自动迁移现有数据，原位置保留副本，立即生效。</p><button type="button" class="cal-secondary" id="settings-storage-change">更改文件夹</button></div><p id="settings-storage-status" role="status" aria-live="polite"></p></div></section><footer class="settings-footer">Jotlet <span>让每件事，都有迹可循。</span></footer></div>`;
   document.body.append(root);
+  // Reuse the existing controls and their import/export handlers in Settings.
+  const transfer = root.querySelector('#settings-transfer-actions')!;
+  for (const selector of ['.import-button', '.export-menu', '.data-info']) {
+    const control = document.querySelector<HTMLElement>(selector)!;
+    transfer.append(control);
+  }
   const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
     root.querySelector<T>(selector)!;
   function fill(preferences: Preferences) {
@@ -77,12 +83,70 @@ export function createSettings(options: SettingsOptions) {
     status('已恢复默认，点击“保存设置”后生效');
   });
   $('#settings-back').addEventListener('click', options.back);
-  $('#settings-data').addEventListener('click', options.openData);
+  let changingLocation = false;
+  function storageStatus(text: string, error = false) {
+    $('#settings-storage-status').textContent = text;
+    $('#settings-storage-status').classList.toggle('error', error);
+  }
+  async function loadLocation() {
+    const api = window.jotletStorage;
+    $<HTMLButtonElement>('#settings-storage-change').disabled =
+      !api || changingLocation;
+    if (!api) {
+      $('#settings-storage-path').textContent =
+        '请通过 Jotlet 桌面应用设置保存位置';
+      return;
+    }
+    try {
+      const result = await api.getLocation();
+      if (!result.ok) throw new Error(result.error);
+      $('#settings-storage-path').textContent = result.data.directory;
+      document.querySelector('#data-path')!.textContent =
+        result.data.eventsPath;
+    } catch (error) {
+      storageStatus(
+        error instanceof Error ? error.message : '无法读取保存位置。',
+        true,
+      );
+    }
+  }
+  $('#settings-storage-change').addEventListener('click', () => {
+    if (changingLocation || !window.jotletStorage) return;
+    changingLocation = true;
+    $<HTMLButtonElement>('#settings-storage-change').disabled = true;
+    storageStatus('请选择文件夹，完成迁移前请保持应用打开。');
+    void (async () => {
+      try {
+        await options.beforeDataChange();
+        const result = await window.jotletStorage!.chooseLocation();
+        if (!result.ok) throw new Error(result.error);
+        if (!result.data) {
+          storageStatus('');
+          return;
+        }
+        $('#settings-storage-path').textContent = result.data.directory;
+        document.querySelector('#data-path')!.textContent =
+          result.data.eventsPath;
+        storageStatus('保存位置已更新，后续修改将保存在此文件夹。');
+      } catch (error) {
+        storageStatus(
+          error instanceof Error
+            ? error.message
+            : '更换保存位置失败，仍使用原位置。',
+          true,
+        );
+      } finally {
+        changingLocation = false;
+        $<HTMLButtonElement>('#settings-storage-change').disabled = false;
+      }
+    })();
+  });
   return {
     root,
     refresh() {
       fill(options.getPreferences());
       status('');
+      void loadLocation();
     },
   };
 }

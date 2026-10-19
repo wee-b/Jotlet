@@ -138,10 +138,54 @@
   color: #b67562;
 }
 .settings-data {
+  display: block;
+}
+.settings-data-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.settings-data-tools .import-button,
+.settings-data-tools .data-info {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid #e1e7d8;
+  border-radius: 7px;
+  background: #f7f9f3;
+}
+.settings-data-tools .import-button:hover,
+.settings-data-tools .data-info:hover {
+  background: #edf1e6;
+}
+.settings-storage {
+  border-top: 1px solid #edf0e8;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+#settings-storage-path {
+  display: block;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #f0f3ec;
+  border-radius: 7px;
+  color: #68765b;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.settings-storage-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
+  margin-top: 14px;
+}
+.settings-storage-actions p {
+  flex: 1;
+  margin: 0;
+}
+#settings-storage-status.error {
+  color: #b67562;
 }
 .settings-footer {
   display: flex;

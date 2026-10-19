@@ -2,7 +2,8 @@
 declare module '*.css';
 
 interface Window {
-  jotletWindow?: { readonly integratedTitlebar: boolean };
+  jotletStorage?: import('./data-location').StorageAPI;
+  jotletWindow?: import('./window-controls').WindowAPI;
   jotlet: import('./events').EventsAPI;
   jotletCalendar: import('./schedules').CalendarAPI;
 }

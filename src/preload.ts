@@ -1,10 +1,27 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { EventsAPI } from './events';
 import type { CalendarAPI } from './schedules';
+import type { WindowAPI, WindowState } from './window-controls';
+import type { StorageAPI } from './data-location';
 
-contextBridge.exposeInMainWorld('jotletWindow', {
+const storageAPI: StorageAPI = {
+  getLocation: () => ipcRenderer.invoke('storage:location'),
+  chooseLocation: () => ipcRenderer.invoke('storage:choose-location'),
+};
+contextBridge.exposeInMainWorld('jotletStorage', storageAPI);
+
+const windowAPI: WindowAPI = {
   integratedTitlebar: process.platform === 'win32',
-});
+  command: (action) => ipcRenderer.invoke('window:command', action),
+  getState: () => ipcRenderer.invoke('window:state'),
+  onStateChange: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: WindowState) =>
+      listener(state);
+    ipcRenderer.on('window:state-changed', handler);
+    return () => ipcRenderer.removeListener('window:state-changed', handler);
+  },
+};
+contextBridge.exposeInMainWorld('jotletWindow', windowAPI);
 
 const api: EventsAPI = {
   load: () => ipcRenderer.invoke('events:load'),

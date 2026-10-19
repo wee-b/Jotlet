@@ -22,6 +22,7 @@ body {
   transform: rotate(180deg);
 }
 .app-topbar {
+  position: relative;
   height: var(--app-topbar-height);
   display: flex;
   align-items: center;
@@ -34,15 +35,62 @@ body {
 .integrated-titlebar .app-topbar {
   -webkit-app-region: drag;
   user-select: none;
-  padding-right: calc(
-    100vw - env(titlebar-area-width, calc(100vw - 138px)) + 24px
-  );
+  padding-right: 158px;
 }
 .integrated-titlebar .app-topbar a,
 .integrated-titlebar .app-topbar button {
   /* Keep exclusions inside the titlebar; scrolling calendar buttons must not
      register native no-drag regions over it. */
   -webkit-app-region: no-drag;
+}
+.window-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: calc(var(--app-topbar-height) - 1px);
+  display: flex;
+}
+.window-control {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  color: #506550;
+}
+.window-control::before {
+  content: '';
+  position: absolute;
+  inset: 4px 3px;
+  border-radius: 6px;
+}
+.window-control:hover::before,
+.window-control:focus-visible::before {
+  background: #e5e9e1;
+}
+.window-control:active::before {
+  background: #d8dfd2;
+}
+.window-close:hover,
+.window-close:focus-visible {
+  color: #fff;
+}
+.window-close:hover::before,
+.window-close:focus-visible::before {
+  background: #c74a45;
+}
+.window-close:active::before {
+  background: #b13c38;
+}
+.window-control svg {
+  position: relative;
+  width: 12px;
+  height: 12px;
+}
+.window-control:focus-visible {
+  outline-offset: -5px;
+  border-radius: 6px;
 }
 .cal-brand {
   display: flex;
@@ -448,6 +496,24 @@ body {
 .agenda-item:hover strong {
   color: var(--cal-accent);
 }
+.schedule-linked-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-shrink: 0;
+  font-size: 9px;
+  line-height: 13px;
+}
+.schedule-linked-event > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.schedule-linked-event .cal-icon {
+  width: 11px;
+  height: 11px;
+}
 .sidebar-bottom {
   margin-top: auto;
   padding-top: 20px;
@@ -764,11 +830,15 @@ body {
   flex: 1;
   min-width: 0;
 }
-.month-schedule > span {
+.month-schedule > .schedule-time {
   font-size: 9px;
   opacity: 0.8;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+.month-schedule > .schedule-linked-event {
+  max-width: 48%;
+  opacity: 0.85;
 }
 .month-schedule .cal-icon {
   width: 11px;
@@ -997,12 +1067,36 @@ body {
   font-size: 9px;
   opacity: 0.8;
 }
-.week-schedule .cal-icon {
-  position: absolute;
-  bottom: 6px;
-  right: 7px;
-  width: 11px;
-  height: 11px;
+.week-schedule > .schedule-linked-event {
+  width: 100%;
+  margin-top: auto;
+}
+.week-schedule.has-linked-event.is-compact {
+  padding: 2px 5px;
+  gap: 1px;
+}
+.week-schedule.has-linked-event.is-compact strong {
+  line-height: 12px;
+}
+.week-schedule.has-linked-event.is-compact .schedule-time {
+  display: none;
+}
+.week-schedule.has-linked-event.is-compact .schedule-linked-event {
+  line-height: 12px;
+}
+.week-schedule.has-linked-event.is-tiny {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+.week-schedule.has-linked-event.is-tiny strong {
+  flex: 1;
+  min-width: 0;
+}
+.week-schedule.has-linked-event.is-tiny .schedule-linked-event {
+  width: auto;
+  max-width: 48%;
+  margin-top: 0;
 }
 .week-schedule:hover {
   filter: brightness(0.97);
@@ -1386,7 +1480,7 @@ body {
     gap: 36px;
     padding: 0 23px;
   }
-  .month-schedule > span {
+  .month-schedule > .schedule-time {
     display: none;
   }
 }
