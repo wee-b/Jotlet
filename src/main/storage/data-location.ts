@@ -11,23 +11,14 @@ import {
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import { EventsStore } from './storage.ts';
-import { ScheduleStore } from './schedule-storage.ts';
-import { makeBackup } from './events.ts';
-import type { Result } from './events.ts';
-import { parseJotletBackup } from './jotlet-backup.ts';
-import type { JotletBackup } from './jotlet-backup.ts';
+import { EventsStore } from './event-store.ts';
+import { ScheduleStore } from './schedule-store.ts';
+import { makeBackup } from '../../shared/events.ts';
+import { parseJotletBackup } from '../../shared/backup.ts';
+import type { JotletBackup } from '../../shared/backup.ts';
 import type { InstallationData } from './installation.ts';
+import type { DataLocation } from '../../shared/api.ts';
 
-export interface DataLocation {
-  directory: string;
-  eventsPath: string;
-  calendarPath: string;
-}
-export interface StorageAPI {
-  getLocation(): Promise<Result<DataLocation>>;
-  chooseLocation(): Promise<Result<DataLocation | null>>;
-}
 const dataFiles = [
   'notes.json',
   'notes.json.bak',

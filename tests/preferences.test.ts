@@ -5,7 +5,7 @@ import {
   loadPreferences,
   parsePreferences,
   savePreferences,
-} from '../src/preferences.ts';
+} from '../src/renderer/pages/settings/preferences.ts';
 
 test('settings fall back per field and validate defaults without changing valid choices', () => {
   assert.deepEqual(parsePreferences(null), defaultPreferences);

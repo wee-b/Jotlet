@@ -15,7 +15,7 @@ export async function writeInstallationHint(file: string, directory: string) {
   await rename(`${file}.tmp`, file);
 }
 
-// NSIS WriteINIStr creates UTF-16LE files on Windows; keep non-ASCII paths intact.
+// The installer writes UTF-16LE so Chinese directory names survive the handoff.
 export async function readInstallation(
   file: string,
 ): Promise<InstallationData | null> {

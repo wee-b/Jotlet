@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { makeJotletBackup, parseJotletBackup } from '../src/jotlet-backup.ts';
-import type { EventRecord } from '../src/events.ts';
-import type { Schedule } from '../src/schedules.ts';
+import { makeJotletBackup, parseJotletBackup } from '../src/shared/backup.ts';
+import type { EventRecord } from '../src/shared/events.ts';
+import type { Schedule } from '../src/shared/schedules.ts';
 const stamp = '2026-10-19T02:00:00.000Z';
 const event: EventRecord = {
   id: 'event',

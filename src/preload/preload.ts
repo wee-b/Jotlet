@@ -1,8 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { EventsAPI } from './events';
-import type { CalendarAPI } from './schedules';
-import type { WindowAPI, WindowState } from './window-controls';
-import type { StorageAPI } from './data-location';
+import type {
+  EventsAPI,
+  CalendarAPI,
+  WindowAPI,
+  WindowState,
+  StorageAPI,
+} from '../shared/api';
 
 const storageAPI: StorageAPI = {
   getLocation: () => ipcRenderer.invoke('storage:location'),

@@ -5,8 +5,8 @@ import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { buildInstaller } from '../maker-nsis.mts';
-import { readInstallation } from '../src/installation.ts';
+import { buildInstaller } from '../build/maker-nsis.mts';
+import { readInstallation } from '../src/main/storage/installation.ts';
 
 // The fixture uses a private registry key and creates no desktop/start-menu links.
 const execute = promisify(execFile);

@@ -101,6 +101,7 @@ npm start
 | ------------------------ | ----------------------------------------------------------- |
 | `npm run lint`           | 代码与格式检查                                              |
 | `npm run typecheck`      | TypeScript 类型检查                                         |
+| `npm run check`          | 一次运行类型、代码格式与单元测试检查                        |
 | `npm test`               | 数据、日历交互、迁移和安装配置测试                          |
 | `npm run test:installer` | 隔离测试安装／卸载、中文路径、目录冲突和数据保留（Windows） |
 | `npm run icons`          | 从矢量源文件生成应用图标                                    |
@@ -109,20 +110,33 @@ npm start
 
 Windows 安装包输出到 `out/make/nsis/x64/`。首次构建会下载 NSIS 3.12，并校验固定的 SHA-256，编译器缓存在 `.cache/nsis-3.12`。安装器测试仅使用临时目录和独立注册表键，不操作正式安装的数据。
 
-主要文件：
+目录结构：
 
 ```text
-src/calendar-page.ts     日历与日程交互
-src/renderer.ts          事件与记录页面
-src/settings-page.ts     设置页面
-src/main.ts              桌面窗口及文件操作接口
-src/data-location.ts     数据目录迁移与恢复
-src/installation.ts      安装目录配置读取
-installer/jotlet.nsi     Windows 安装／卸载向导
-maker-nsis.mts           Electron Forge 的 NSIS 构建入口
-assets/jotlet.svg        应用图标矢量源文件
-tests/                  数据和交互测试
+src/
+  main/                 Electron 启动、窗口与 IPC
+    storage/            文件读写、数据目录迁移和安装配置
+  preload/              向页面暴露受限的桌面 API
+  shared/               事件、日程、备份格式及 API 类型
+  renderer/
+    app.ts              页面装配与导航
+    components/         导航栏、窗口按钮、图标和提示层
+    pages/
+      calendar/         周／月视图、时间拖选和日程编辑
+      events/           事件列表、记录编辑和时间线
+      settings/         偏好设置、导入导出和保存位置
+    styles/             全局样式与应用外壳
+    utils/              前端共用的小工具
+build/                  Electron Forge 的 NSIS 构建扩展
+installer/              Windows 安装／卸载向导
+scripts/                图标生成与安装器测试
+tests/                  数据、交互和迁移测试
+assets/                 应用图标
 ```
+
+页面各自管理模板、样式和交互，跨页面操作由 `renderer/app.ts` 连接。`shared` 保持为纯 TypeScript，不依赖 Electron、文件系统或页面 DOM；前端通过 preload API 访问本地数据，不直接导入主进程模块。
+
+修改数据格式或保存流程时，先补充对应的 `tests/*.test.ts`，再运行 `npm run check`。涉及窗口、preload 或构建入口的改动还需运行 `npm run package`；涉及安装流程时运行 `npm run test:installer`。
 
 ## 许可证
 

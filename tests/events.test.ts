@@ -8,8 +8,8 @@ import {
   parseData,
   parseEvent,
   toMarkdown,
-} from '../src/events.ts';
-import type { EventRecord } from '../src/events.ts';
+} from '../src/shared/events.ts';
+import type { EventRecord } from '../src/shared/events.ts';
 
 const start = '2026-10-01T02:00:00.000Z';
 const later = '2026-10-02T03:00:00.000Z';

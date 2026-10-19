@@ -10,8 +10,8 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { DataLocationManager } from '../src/data-location.ts';
-import { makeJotletBackup } from '../src/jotlet-backup.ts';
+import { DataLocationManager } from '../src/main/storage/data-location.ts';
+import { makeJotletBackup } from '../src/shared/backup.ts';
 const stamp = '2026-10-19T02:00:00.000Z';
 test('restoring .jotlet switches the active dataset and location together, retaining originals', async () => {
   const f = await fixture();

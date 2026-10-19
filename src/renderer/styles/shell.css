@@ -1,0 +1,244 @@
+#app {
+  display: flex;
+  overflow: hidden;
+  height: calc(100dvh - var(--app-topbar-height));
+  min-height: 0;
+}
+:root {
+  --app-topbar-height: 40px;
+  --app-brand-mark-size: 26px;
+  --cal-accent: var(--green);
+  --cal-ink: #29372f;
+  --cal-muted: var(--muted);
+  --cal-line: var(--line);
+}
+body {
+  overflow: hidden;
+}
+.cal-icon {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.cal-icon.flipped {
+  transform: rotate(180deg);
+}
+.app-topbar {
+  position: relative;
+  height: var(--app-topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  padding-left: calc(
+    (var(--app-topbar-height) - 1px - var(--app-brand-mark-size)) / 2
+  );
+  gap: 38px;
+  border-bottom: 1px solid var(--cal-line);
+  background: #f8f9f6;
+  color: var(--cal-ink);
+}
+.integrated-titlebar .app-topbar {
+  -webkit-app-region: drag;
+  user-select: none;
+  padding-right: 158px;
+}
+.integrated-titlebar .app-topbar a,
+.integrated-titlebar .app-topbar button {
+  /* Keep exclusions inside the titlebar; scrolling calendar buttons must not
+     register native no-drag regions over it. */
+  -webkit-app-region: no-drag;
+}
+.window-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: calc(var(--app-topbar-height) - 1px);
+  display: flex;
+}
+.window-control {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  color: #506550;
+}
+.window-control::before {
+  content: '';
+  position: absolute;
+  inset: 4px 3px;
+  border-radius: 6px;
+}
+.window-control:hover::before,
+.window-control:focus-visible::before {
+  background: #e5e9e1;
+}
+.window-control:active::before {
+  background: #d8dfd2;
+}
+.window-close:hover,
+.window-close:focus-visible {
+  color: #fff;
+}
+.window-close:hover::before,
+.window-close:focus-visible::before {
+  background: #c74a45;
+}
+.window-close:active::before {
+  background: #b13c38;
+}
+.window-control svg {
+  position: relative;
+  width: 12px;
+  height: 12px;
+}
+.window-control:focus-visible {
+  outline-offset: -5px;
+  border-radius: 6px;
+}
+.cal-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #2c4636;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -1px;
+}
+.cal-brand-mark {
+  display: grid;
+  place-items: center;
+  height: var(--app-brand-mark-size);
+  width: var(--app-brand-mark-size);
+  border-radius: 8px;
+  color: #fff;
+  background: var(--cal-accent);
+  margin-right: 8px;
+}
+.cal-brand-mark .cal-icon {
+  width: 16px;
+  height: 16px;
+}
+.cal-brand-period {
+  color: #c69a55;
+}
+.app-pages {
+  align-self: stretch;
+  display: flex;
+  gap: 25px;
+}
+.app-pages button {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+  color: #8a9588;
+  font-size: 13px;
+}
+.app-pages button .cal-icon {
+  width: 17px;
+  height: 17px;
+}
+.app-pages button.active {
+  color: var(--cal-accent);
+  font-weight: 600;
+}
+.app-pages button.active::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  background: var(--cal-accent);
+  border-radius: 3px 3px 0 0;
+}
+.cal-primary,
+.cal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 37px;
+  border-radius: 7px;
+  padding: 9px 17px;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+  white-space: nowrap;
+}
+.cal-primary {
+  background: var(--cal-accent);
+  border: 1px solid var(--cal-accent);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 550;
+  padding: 12px 16px;
+}
+.cal-primary:hover:not(:disabled) {
+  background: #25533d;
+}
+.cal-secondary {
+  color: #7c8e6b;
+  background: #edf1e6;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 10px 17px;
+}
+.cal-secondary:hover:not(:disabled) {
+  background: #f4f7ef;
+}
+.cal-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  color: #8b948c;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.cal-icon-button:hover {
+  background: #e7ecdf;
+  color: var(--cal-accent);
+}
+.cal-text-button {
+  font-size: 11px;
+  color: var(--cal-accent);
+  padding: 0;
+}
+@media (max-width: 1100px) {
+  .app-topbar {
+    gap: 36px;
+  }
+}
+@media (max-width: 700px) {
+  .app-topbar {
+    gap: 22px;
+  }
+  .cal-brand {
+    font-size: 21px;
+  }
+  .app-pages {
+    gap: 17px;
+  }
+  .app-pages button {
+    font-size: 11px;
+  }
+  .app-pages .cal-icon {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cal-primary,
+  .cal-secondary {
+    transition: none;
+  }
+}

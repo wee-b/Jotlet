@@ -1,242 +1,15 @@
-:root {
-  --app-topbar-height: 40px;
-  --app-brand-mark-size: 26px;
-  --cal-accent: var(--green);
-  --cal-ink: #29372f;
-  --cal-muted: var(--muted);
-  --cal-line: var(--line);
-}
-body {
-  overflow: hidden;
-}
-#app {
-  height: calc(100dvh - var(--app-topbar-height));
-  min-height: 0;
-}
-.cal-icon {
-  width: 19px;
-  height: 19px;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-.cal-icon.flipped {
-  transform: rotate(180deg);
-}
-.app-topbar {
-  position: relative;
-  height: var(--app-topbar-height);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  padding-left: calc(
-    (var(--app-topbar-height) - 1px - var(--app-brand-mark-size)) / 2
-  );
-  gap: 38px;
-  border-bottom: 1px solid var(--cal-line);
-  background: #f8f9f6;
-  color: var(--cal-ink);
-}
-.integrated-titlebar .app-topbar {
-  -webkit-app-region: drag;
-  user-select: none;
-  padding-right: 158px;
-}
-.integrated-titlebar .app-topbar a,
-.integrated-titlebar .app-topbar button {
-  /* Keep exclusions inside the titlebar; scrolling calendar buttons must not
-     register native no-drag regions over it. */
-  -webkit-app-region: no-drag;
-}
-.window-controls {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: calc(var(--app-topbar-height) - 1px);
-  display: flex;
-}
-.window-control {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 100%;
-  padding: 0;
-  color: #506550;
-}
-.window-control::before {
-  content: '';
-  position: absolute;
-  inset: 4px 3px;
-  border-radius: 6px;
-}
-.window-control:hover::before,
-.window-control:focus-visible::before {
-  background: #e5e9e1;
-}
-.window-control:active::before {
-  background: #d8dfd2;
-}
-.window-close:hover,
-.window-close:focus-visible {
-  color: #fff;
-}
-.window-close:hover::before,
-.window-close:focus-visible::before {
-  background: #c74a45;
-}
-.window-close:active::before {
-  background: #b13c38;
-}
-.window-control svg {
-  position: relative;
-  width: 12px;
-  height: 12px;
-}
-.window-control:focus-visible {
-  outline-offset: -5px;
-  border-radius: 6px;
-}
-.cal-brand {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: #2c4636;
-  font-size: 22px;
-  font-weight: 750;
-  letter-spacing: -1px;
-}
-.cal-brand-mark {
-  display: grid;
-  place-items: center;
-  height: var(--app-brand-mark-size);
-  width: var(--app-brand-mark-size);
-  border-radius: 8px;
-  color: #fff;
-  background: var(--cal-accent);
-  margin-right: 8px;
-}
-.cal-brand-mark .cal-icon {
-  width: 16px;
-  height: 16px;
-}
-.cal-brand-period {
-  color: #c69a55;
-}
-.app-pages {
-  align-self: stretch;
-  display: flex;
-  gap: 25px;
-}
-.app-pages button {
-  display: flex;
-  position: relative;
-  align-items: center;
-  gap: 8px;
-  padding: 0 2px;
-  color: #8a9588;
-  font-size: 13px;
-}
-.app-pages button .cal-icon {
-  width: 17px;
-  height: 17px;
-}
-.app-pages button.active {
-  color: var(--cal-accent);
-  font-weight: 600;
-}
-.app-pages button.active::after {
-  content: '';
-  position: absolute;
-  height: 2px;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  background: var(--cal-accent);
-  border-radius: 3px 3px 0 0;
-}
 .calendar-page-actions {
   display: flex;
-  margin-left: auto;
   align-items: center;
   gap: 21px;
+  margin-left: 0;
+  flex-shrink: 0;
 }
-.cal-local {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  color: #97a08f;
-  font-size: 11px;
-  white-space: nowrap;
-}
-.cal-local i,
 .calendar-storage i {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: #95af7b;
-}
-.topbar-separator {
-  height: 21px;
-  width: 1px;
-  background: var(--cal-line);
-}
-.cal-primary,
-.cal-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 37px;
-  border-radius: 7px;
-  padding: 9px 17px;
-  font-size: 12px;
-  font-weight: 500;
-  transition:
-    background 0.15s,
-    box-shadow 0.15s;
-  white-space: nowrap;
-}
-.cal-primary {
-  background: var(--cal-accent);
-  border: 1px solid var(--cal-accent);
-  color: #fff;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 550;
-  padding: 12px 16px;
-}
-.cal-primary:hover:not(:disabled) {
-  background: #25533d;
-}
-.cal-secondary {
-  color: #7c8e6b;
-  background: #edf1e6;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-size: 12px;
-  padding: 10px 17px;
-}
-.cal-secondary:hover:not(:disabled) {
-  background: #f4f7ef;
-}
-.cal-icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 29px;
-  height: 29px;
-  padding: 0;
-  color: #8b948c;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.cal-icon-button:hover {
-  background: #e7ecdf;
-  color: var(--cal-accent);
-}
-.cal-text-button {
-  font-size: 11px;
-  color: var(--cal-accent);
-  padding: 0;
 }
 #calendar-app {
   display: flex;
@@ -349,41 +122,6 @@ body {
   border-radius: 50%;
   background: #8da477;
   bottom: -1px;
-}
-.cal-search {
-  margin-top: 29px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #e1e7d8;
-  background: #fff;
-  border-radius: 7px;
-}
-.cal-search .cal-icon {
-  width: 15px;
-  height: 15px;
-  color: #a0a99a;
-}
-.cal-search input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  font-size: 11px;
-  color: #6a7862;
-  background: transparent;
-}
-.cal-search input::placeholder {
-  color: #a4ae99;
-}
-.cal-search kbd {
-  font:
-    9px 'Segoe UI',
-    sans-serif;
-  color: #b0b9a7;
-  white-space: nowrap;
 }
 .sidebar-section-title {
   display: flex;
@@ -590,13 +328,6 @@ body {
   letter-spacing: -0.7px;
   font-weight: 600;
 }
-.calendar-title-group > span {
-  display: none;
-  font-size: 10px;
-  color: #a0a694;
-  margin-top: 8px;
-  letter-spacing: 0.3px;
-}
 .calendar-date-picker {
   display: flex;
   align-items: center;
@@ -632,14 +363,6 @@ body {
   display: flex;
   align-items: center;
   gap: 15px;
-}
-.calendar-page-actions {
-  margin-left: 0;
-  flex-shrink: 0;
-}
-.calendar-page-actions .cal-local,
-.calendar-page-actions .topbar-separator {
-  display: none;
 }
 .calendar-navigation .cal-secondary {
   font-size: 11px;
@@ -1520,9 +1243,6 @@ body {
   .calendar-view-switch button {
     padding: 6px 12px;
   }
-  .app-topbar {
-    gap: 36px;
-  }
   .month-schedule > .schedule-time {
     display: none;
   }
@@ -1540,12 +1260,6 @@ body {
   .toolbar-divider {
     display: none;
   }
-  .cal-local {
-    display: none;
-  }
-  .topbar-separator {
-    display: none;
-  }
   .month-weekdays span {
     padding-left: 13px;
   }
@@ -1560,21 +1274,6 @@ body {
   .cal-sidebar {
     display: none;
   }
-  .app-topbar {
-    gap: 22px;
-  }
-  .cal-brand {
-    font-size: 21px;
-  }
-  .app-pages {
-    gap: 17px;
-  }
-  .app-pages button {
-    font-size: 11px;
-  }
-  .app-pages .cal-icon {
-    display: none;
-  }
   .calendar-page-actions .cal-primary {
     font-size: 11px;
     padding: 8px 10px;
@@ -1584,9 +1283,6 @@ body {
   }
   .calendar-title-group h1 {
     font-size: 16px;
-  }
-  .calendar-title-group > span {
-    font-size: 9px;
   }
   .calendar-navigation {
     gap: 4px;
@@ -1634,9 +1330,6 @@ body {
   .mini-day {
     height: 27px;
   }
-  .cal-search {
-    margin-top: 20px;
-  }
   .day-agenda {
     margin-top: 17px;
   }
@@ -1657,12 +1350,6 @@ body {
     height: 22px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .cal-primary,
-  .cal-secondary {
-    transition: none;
-  }
-}
 @media (max-width: 1100px) {
   .calendar-toolbar {
     padding-top: 15px;
@@ -1679,9 +1366,6 @@ body {
   .cal-sidebar {
     width: 196px;
     padding-inline: 12px;
-  }
-  .cal-search kbd {
-    display: none;
   }
   .calendar-toolbar {
     padding-inline: 16px;
@@ -1717,9 +1401,6 @@ body {
     padding-bottom: 10px;
     gap: 8px 12px;
   }
-  .calendar-title-group > span {
-    display: none;
-  }
   .week-date-row {
     min-height: 60px;
   }
@@ -1743,7 +1424,6 @@ body {
     padding-top: 12px;
   }
   .mini-calendar,
-  .cal-search,
   .sidebar-bottom {
     flex-shrink: 0;
   }
@@ -1756,9 +1436,6 @@ body {
   .mini-day > span {
     width: 24px;
     height: 24px;
-  }
-  .cal-search {
-    margin-top: 12px;
   }
   .day-agenda {
     display: flex;

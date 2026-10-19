@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import {
   readInstallation,
   writeInstallationHint,
-} from '../src/installation.ts';
-import { DataLocationManager } from '../src/data-location.ts';
-import { createCalendarEvent } from '../src/events.ts';
+} from '../src/main/storage/installation.ts';
+import { DataLocationManager } from '../src/main/storage/data-location.ts';
+import { createCalendarEvent } from '../src/shared/events.ts';
 
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), 'jotlet-installation-'));

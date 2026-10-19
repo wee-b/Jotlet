@@ -1,3 +1,95 @@
+.import-button,
+.data-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: #798675;
+  padding: 15px 3px;
+  text-align: left;
+}
+.import-button {
+  margin-top: 14px;
+}
+.import-button span {
+  font-size: 8px;
+  color: #99a392;
+  margin-left: auto;
+}
+.import-button .icon,
+.data-info .icon {
+  width: 15px;
+  height: 15px;
+}
+.data-info {
+  padding-top: 0;
+  padding-bottom: 20px;
+}
+.data-info span {
+  margin-left: auto;
+  color: #a0aa99;
+}
+.export-menu {
+  position: relative;
+}
+.export-menu summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dfe4d8;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 11px;
+  color: #6a7862;
+  background: #fff;
+}
+.export-menu summary::-webkit-details-marker {
+  display: none;
+}
+.export-menu summary .icon {
+  width: 14px;
+  height: 14px;
+}
+.export-menu summary .icon:last-child {
+  width: 11px;
+  height: 11px;
+  margin-left: 4px;
+}
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 9px);
+  min-width: 245px;
+  background: white;
+  padding: 6px;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 35px #283a2b14;
+  border-radius: 9px;
+  z-index: 5;
+}
+.dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border-radius: 5px;
+}
+.dropdown button:hover {
+  background: #f2f5ee;
+}
+.dropdown strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+}
+.dropdown span {
+  display: block;
+  font-size: 10px;
+  color: #929a8e;
+  margin-top: 6px;
+}
 .settings-entry {
   width: 100%;
   display: flex;

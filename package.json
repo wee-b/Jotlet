@@ -3,6 +3,7 @@
   "productName": "jotlet",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "An offline desktop app for events and their timelines",
   "keywords": [],
   "license": "PolyForm-Noncommercial-1.0.0",
@@ -20,8 +21,9 @@
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt --write",
     "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm test",
     "test:installer": "node --experimental-strip-types scripts/test-installer.mts",
-    "test": "node --experimental-strip-types --test tests/events.test.ts tests/storage.test.ts tests/schedules.test.ts tests/calendar-selection.test.ts tests/preferences.test.ts tests/data-location.test.ts tests/jotlet-backup.test.ts tests/installation.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

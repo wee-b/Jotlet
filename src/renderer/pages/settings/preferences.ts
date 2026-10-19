@@ -1,5 +1,5 @@
-import { scheduleColors } from './schedules.ts';
-import type { ScheduleColor } from './schedules.ts';
+import { scheduleColors } from '../../../shared/schedules.ts';
+import type { ScheduleColor } from '../../../shared/schedules.ts';
 
 export interface Preferences {
   defaultView: 'week' | 'month';

@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { parseSchedule } from './schedules.ts';
-import type { Schedule } from './schedules.ts';
+import { parseSchedule } from '../../shared/schedules.ts';
+import type { Schedule } from '../../shared/schedules.ts';
 
 export class ScheduleStore {
   private schedules: Schedule[] = [];

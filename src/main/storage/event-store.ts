@@ -1,8 +1,13 @@
 import { readFile, writeFile, mkdir, rename, copyFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import { makeBackup, mergeEvents, parseData, parseEvent } from './events.ts';
-import type { EventRecord, ImportSummary } from './events.ts';
+import {
+  makeBackup,
+  mergeEvents,
+  parseData,
+  parseEvent,
+} from '../../shared/events.ts';
+import type { EventRecord, ImportSummary } from '../../shared/events.ts';
 
 export class EventsStore {
   private events: EventRecord[] = [];

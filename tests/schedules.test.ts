@@ -12,9 +12,9 @@ import {
   parseSchedule,
   scheduleColors,
   weekStart,
-} from '../src/schedules.ts';
-import { ScheduleStore } from '../src/schedule-storage.ts';
-import type { Schedule } from '../src/schedules.ts';
+} from '../src/shared/schedules.ts';
+import { ScheduleStore } from '../src/main/storage/schedule-store.ts';
+import type { Schedule } from '../src/shared/schedules.ts';
 
 const schedule = (
   id = 'schedule-1',

@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { EventsStore } from '../src/storage.ts';
-import { createCalendarEvent, parseBackup } from '../src/events.ts';
-import type { EventRecord } from '../src/events.ts';
+import { EventsStore } from '../src/main/storage/event-store.ts';
+import { createCalendarEvent, parseBackup } from '../src/shared/events.ts';
+import type { EventRecord } from '../src/shared/events.ts';
 const start = '2026-10-01T02:00:00.000Z';
 const makeEvent = (id: string): EventRecord => ({
   id,

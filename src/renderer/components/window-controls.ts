@@ -1,14 +1,4 @@
-import type { Result } from './events';
-
-export interface WindowState {
-  maximized: boolean;
-}
-export interface WindowAPI {
-  readonly integratedTitlebar: boolean;
-  command(action: 'minimize' | 'maximize' | 'close'): Promise<Result<void>>;
-  getState(): Promise<Result<WindowState>>;
-  onStateChange(listener: (state: WindowState) => void): () => void;
-}
+import type { WindowState } from '../../shared/api';
 
 export function createWindowControls(
   header: HTMLElement,

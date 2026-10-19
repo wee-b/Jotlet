@@ -1,4 +1,4 @@
-import type { EventRecord, Result } from './events';
+import type { EventRecord } from './events';
 
 export const scheduleColors = {
   sage: '浅绿',
@@ -19,11 +19,6 @@ export interface Schedule {
   description: string;
   createdAt: string;
   updatedAt: string;
-}
-export interface CalendarAPI {
-  load(): Promise<Result<Schedule[]>>;
-  save(schedule: Schedule): Promise<Result<Schedule>>;
-  remove(id: string): Promise<Result<void>>;
 }
 
 export function filterSchedules(

@@ -23,7 +23,7 @@ export interface Backup {
   exportedAt: string;
   events: EventRecord[];
 }
-export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+
 export interface ImportSummary {
   added: number;
   skipped: number;
@@ -32,15 +32,6 @@ export interface ImportSummary {
   schedules?: import('./schedules').Schedule[];
   dataPath?: string;
   directory?: string;
-}
-export interface EventsAPI {
-  load(): Promise<Result<{ events: EventRecord[]; dataPath: string }>>;
-  save(event: EventRecord): Promise<Result<EventRecord>>;
-  remove(id: string): Promise<Result<void>>;
-  importEvents(): Promise<Result<ImportSummary | null>>;
-  exportEvents(
-    format: 'jotlet' | 'json' | 'markdown',
-  ): Promise<Result<string | null>>;
 }
 
 function object(value: unknown): value is Record<string, unknown> {

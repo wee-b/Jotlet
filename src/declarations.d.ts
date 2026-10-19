@@ -2,8 +2,8 @@
 declare module '*.css';
 
 interface Window {
-  jotletStorage?: import('./data-location').StorageAPI;
-  jotletWindow?: import('./window-controls').WindowAPI;
-  jotlet: import('./events').EventsAPI;
-  jotletCalendar: import('./schedules').CalendarAPI;
+  jotletStorage?: import('./shared/api').StorageAPI;
+  jotletWindow?: import('./shared/api').WindowAPI;
+  jotlet: import('./shared/api').EventsAPI;
+  jotletCalendar: import('./shared/api').CalendarAPI;
 }

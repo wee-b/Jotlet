@@ -1,46 +1,32 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { dialog, ipcMain } from 'electron';
+import type { BrowserWindow } from 'electron';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { EventsStore } from './storage';
-import { makeBackup, parseEvent, toMarkdown } from './events';
-import type { Result } from './events';
-import { ScheduleStore } from './schedule-storage';
-import { parseSchedule } from './schedules';
-import { DataLocationManager } from './data-location';
-import { makeJotletBackup, parseJotletBackup } from './jotlet-backup';
-import { readInstallation, writeInstallationHint } from './installation';
+import { makeBackup, parseEvent, toMarkdown } from '../shared/events';
+import type { Result } from '../shared/api';
+import { parseSchedule } from '../shared/schedules';
+import { makeJotletBackup, parseJotletBackup } from '../shared/backup';
+import type { DataLocationManager } from './storage/data-location';
 
-if (process.platform === 'win32')
-  app.setAppUserModelId('com.squirrel.jotlet.jotlet');
-
-if (!app.requestSingleInstanceLock()) app.quit();
-
-let mainWindow: BrowserWindow | null = null;
-let store: EventsStore;
-let scheduleStore: ScheduleStore;
-let dataLocation: DataLocationManager;
-let dataQueue: Promise<unknown> = Promise.resolve();
-let fileDialogOpen = false;
-let installationHint: string | undefined;
-async function updateInstallationHint() {
-  if (installationHint)
-    await writeInstallationHint(
-      installationHint,
-      dataLocation.location.directory,
-    ).catch((error) =>
-      console.error('Cannot update installer directory hint:', error),
-    );
-}
-
-function registerHandlers() {
+export function registerHandlers(
+  getWindow: () => BrowserWindow | null,
+  dataLocation: DataLocationManager,
+  updateInstallationHint: () => Promise<void>,
+) {
+  let store = dataLocation.events;
+  let scheduleStore = dataLocation.schedules;
+  let dataQueue: Promise<unknown> = Promise.resolve();
+  let fileDialogOpen = false;
   const handle = <T>(
     channel: string,
     action: (...args: unknown[]) => Promise<T>,
   ) => {
     ipcMain.handle(channel, async (event, ...args): Promise<Result<T>> => {
+      const window = getWindow();
       if (
-        event.sender !== mainWindow?.webContents ||
-        event.senderFrame !== mainWindow.webContents.mainFrame
+        !window ||
+        event.sender !== window.webContents ||
+        event.senderFrame !== window.webContents.mainFrame
       ) {
         return { ok: false, error: '无法访问本地数据。' };
       }
@@ -61,10 +47,10 @@ function registerHandlers() {
   };
 
   handle('window:state', async () => ({
-    maximized: mainWindow!.isMaximized() || mainWindow!.isFullScreen(),
+    maximized: getWindow()!.isMaximized() || getWindow()!.isFullScreen(),
   }));
   handle('window:command', async (action) => {
-    const window = mainWindow!;
+    const window = getWindow()!;
     if (action === 'minimize') window.minimize();
     else if (action === 'maximize') {
       if (window.isFullScreen()) window.setFullScreen(false);
@@ -79,7 +65,7 @@ function registerHandlers() {
   });
   handle('storage:location', async () => dataLocation.location);
   handle('storage:choose-location', async () => {
-    const selection = await dialog.showOpenDialog(mainWindow!, {
+    const selection = await dialog.showOpenDialog(getWindow()!, {
       title: '选择数据保存文件夹',
       defaultPath: dataLocation.location.directory,
       properties: ['openDirectory', 'createDirectory'],
@@ -115,7 +101,7 @@ function registerHandlers() {
     if (fileDialogOpen) return null;
     fileDialogOpen = true;
     try {
-      const selection = await dialog.showOpenDialog(mainWindow!, {
+      const selection = await dialog.showOpenDialog(getWindow()!, {
         title: '选择要导入的 Jotlet 数据文件',
         properties: ['openFile'],
         filters: [{ name: 'Jotlet 专属备份', extensions: ['jotlet'] }],
@@ -130,7 +116,7 @@ function registerHandlers() {
       if (!fileInfo.isFile() || fileInfo.size > 20 * 1024 * 1024)
         throw new Error('请选择不超过 20 MB 的 .jotlet 文件。');
       const archive = parseJotletBackup(await readFile(filePath, 'utf8'));
-      const destination = await dialog.showOpenDialog(mainWindow!, {
+      const destination = await dialog.showOpenDialog(getWindow()!, {
         title: '选择导入后的数据保存文件夹',
         properties: ['openDirectory', 'createDirectory'],
         buttonLabel: '导入并使用此文件夹',
@@ -165,7 +151,7 @@ function registerHandlers() {
     try {
       const events = await store.load();
       const extension = format === 'markdown' ? 'md' : format;
-      const selection = await dialog.showSaveDialog(mainWindow!, {
+      const selection = await dialog.showSaveDialog(getWindow()!, {
         title:
           format === 'jotlet'
             ? '导出 Jotlet 完整备份'
@@ -223,111 +209,3 @@ function registerHandlers() {
     }
   });
 }
-
-function createWindow() {
-  const iconName = process.platform === 'win32' ? 'jotlet.ico' : 'jotlet.png';
-  mainWindow = new BrowserWindow({
-    icon: app.isPackaged
-      ? path.join(process.resourcesPath, iconName)
-      : path.join(app.getAppPath(), 'assets', iconName),
-    width: 860,
-    height: 580,
-    minWidth: 860,
-    minHeight: 580,
-    backgroundColor: '#f7f8f5',
-    title: 'Jotlet · 随手记',
-    autoHideMenuBar: true,
-    ...(process.platform === 'win32'
-      ? {
-          titleBarStyle: 'hidden' as const,
-          roundedCorners: true,
-        }
-      : {}),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-  const window = mainWindow;
-  const sendWindowState = () => {
-    if (!window.isDestroyed())
-      window.webContents.send('window:state-changed', {
-        maximized: window.isMaximized() || window.isFullScreen(),
-      });
-  };
-  window.on('maximize', sendWindowState);
-  window.on('unmaximize', sendWindowState);
-  window.on('enter-full-screen', sendWindowState);
-  window.on('leave-full-screen', sendWindowState);
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  mainWindow.webContents.session.setPermissionRequestHandler(
-    (_contents, _permission, callback) => callback(false),
-  );
-  mainWindow.webContents.session.webRequest.onBeforeRequest(
-    (details, callback) => {
-      const url = new URL(details.url);
-      const devHost = MAIN_WINDOW_VITE_DEV_SERVER_URL
-        ? new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL).host
-        : '';
-      callback({
-        cancel:
-          !['file:', 'devtools:'].includes(url.protocol) &&
-          !(devHost && url.host === devHost),
-      });
-    },
-  );
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    void mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    void mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
-  }
-}
-
-app
-  .whenReady()
-  .then(async () => {
-    dataLocation = new DataLocationManager(app.getPath('userData'));
-    await dataLocation.initialize();
-    if (app.isPackaged && process.platform === 'win32') {
-      const installation = await readInstallation(
-        path.join(path.dirname(app.getPath('exe')), 'jotlet-install.ini'),
-      );
-      if (installation) {
-        await dataLocation.applyInstallation(installation);
-        installationHint = path.join(
-          path.dirname(app.getPath('exe')),
-          'jotlet-data.ini',
-        );
-        await updateInstallationHint();
-      }
-    }
-    store = dataLocation.events;
-    scheduleStore = dataLocation.schedules;
-    registerHandlers();
-    createWindow();
-    app.on('activate', () => {
-      if (!mainWindow) createWindow();
-    });
-  })
-  .catch((error) => {
-    dialog.showErrorBox(
-      '无法打开数据保存位置',
-      `请检查保存文件夹是否可访问，原数据不会被覆盖。\n${error instanceof Error ? error.message : String(error)}`,
-    );
-    app.quit();
-  });
-app.on('second-instance', () => {
-  if (mainWindow?.isMinimized()) mainWindow.restore();
-  mainWindow?.focus();
-});
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import {
   beginTimeSelection,
   selectedTimeRange,
-} from '../src/calendar-selection.ts';
+} from '../src/renderer/pages/calendar/time-selection.ts';
 
 test('clicking either half of an hour selects exactly thirty minutes', () => {
   assert.deepEqual(selectedTimeRange(9 * 60 + 10), { start: 540, end: 570 });
