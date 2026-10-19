@@ -1,0 +1,168 @@
+.settings-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #7b877b;
+  padding: 11px 8px;
+  text-align: left;
+  font-size: 12px;
+  border-radius: 7px;
+}
+.settings-entry:hover {
+  background: #e7ecdf;
+  color: var(--green);
+}
+.settings-entry > span:last-child {
+  margin-left: auto;
+  color: #a0a99a;
+}
+.settings-entry .cal-icon {
+  width: 16px;
+  height: 16px;
+}
+.sidebar .settings-entry {
+  margin-bottom: 12px;
+}
+#settings-app {
+  height: calc(100dvh - var(--app-topbar-height));
+  overflow-y: auto;
+  display: block;
+  background: #f8f9f6;
+  color: #29372f;
+}
+.settings-container {
+  max-width: 900px;
+  padding: 38px 44px 24px;
+  margin: 0 auto;
+}
+.settings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.settings-eyebrow {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #99a28f;
+}
+.settings-heading h1 {
+  font-size: 26px;
+  margin-top: 9px;
+  font-weight: 600;
+}
+.settings-heading p {
+  margin: 11px 0 0;
+  font-size: 12px;
+  color: #99a28f;
+}
+.settings-card {
+  background: #fdfefb;
+  border: 1px solid #e2e7dc;
+  border-radius: 12px;
+  padding: 25px 28px;
+}
+.settings-card h2 {
+  font-size: 14px;
+  font-weight: 550;
+  margin: 0;
+  color: #3c4a35;
+}
+.settings-card p {
+  font-size: 11px;
+  color: #99a28f;
+  margin: 8px 0 0;
+  line-height: 1.7;
+}
+.settings-card-heading {
+  padding-bottom: 6px;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 21px 0;
+  border-bottom: 1px solid #edf0e8;
+}
+.settings-row:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+.settings-row > label,
+.settings-row-label {
+  font-size: 12px;
+  color: #68765b;
+  line-height: 1.7;
+}
+.settings-row > label > span,
+.settings-row-label > span {
+  display: block;
+  color: #a0a99a;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.settings-row select {
+  width: 166px;
+  flex-shrink: 0;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 12px;
+  color: #6a7862;
+  border: 1px solid #e1e7d8;
+  border-radius: 6px;
+  background: #f7f9f3;
+}
+.settings-colors {
+  display: flex;
+  gap: 18px;
+  padding: 3px;
+  margin: 0;
+  border: 0;
+}
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px 2px 28px;
+}
+.settings-actions .cal-primary {
+  margin-left: auto;
+}
+#settings-status {
+  font-size: 11px;
+  color: #8b9982;
+}
+#settings-status.error {
+  color: #b67562;
+}
+.settings-data {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #a0a99a;
+  padding: 24px 2px 0;
+}
+@media (max-width: 700px) {
+  .settings-container {
+    padding: 25px 20px;
+  }
+  .settings-card {
+    padding: 22px 20px;
+  }
+  .settings-colors-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .settings-row select {
+    width: 130px;
+  }
+}

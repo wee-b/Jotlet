@@ -5,11 +5,14 @@ import started from 'electron-squirrel-startup';
 import { EventsStore } from './storage';
 import { makeBackup, parseBackup, parseEvent, toMarkdown } from './events';
 import type { Result, EventRecord } from './events';
+import { ScheduleStore } from './schedule-storage';
+import { parseSchedule } from './schedules';
 
 if (started || !app.requestSingleInstanceLock()) app.quit();
 
 let mainWindow: BrowserWindow | null = null;
 let store: EventsStore;
+let scheduleStore: ScheduleStore;
 let fileDialogOpen = false;
 
 function registerHandlers() {
@@ -34,6 +37,15 @@ function registerHandlers() {
       }
     });
   };
+
+  handle('calendar:load', () => scheduleStore.load());
+  handle('calendar:save', (schedule) =>
+    scheduleStore.save(parseSchedule(schedule)),
+  );
+  handle('calendar:remove', (id) => {
+    if (typeof id !== 'string' || !id.trim()) throw new Error('日程 ID 无效。');
+    return scheduleStore.remove(id);
+  });
 
   handle('events:load', async () => ({
     events: await store.load(),
@@ -126,6 +138,9 @@ function registerHandlers() {
         `${store.filePath}.bak`,
         `${store.filePath}.tmp`,
         `${store.filePath}.v1.bak`,
+        scheduleStore.filePath,
+        `${scheduleStore.filePath}.bak`,
+        `${scheduleStore.filePath}.tmp`,
       ];
       if (
         protectedPaths.some(
@@ -156,6 +171,17 @@ function createWindow() {
     backgroundColor: '#f7f8f5',
     title: 'Jotlet · 随手记',
     autoHideMenuBar: true,
+    ...(process.platform === 'win32'
+      ? {
+          titleBarStyle: 'hidden' as const,
+          titleBarOverlay: {
+            color: '#f8f9f6',
+            symbolColor: '#506550',
+            // Leave the 40px topbar's bottom border below the native controls.
+            height: 39,
+          },
+        }
+      : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -195,6 +221,9 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store = new EventsStore(path.join(app.getPath('userData'), 'notes.json'));
+  scheduleStore = new ScheduleStore(
+    path.join(app.getPath('userData'), 'calendar.json'),
+  );
   registerHandlers();
   createWindow();
   app.on('activate', () => {

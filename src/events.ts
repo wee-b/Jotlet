@@ -79,6 +79,31 @@ export function chronological(entries: TimelineEntry[]): TimelineEntry[] {
       a.id.localeCompare(b.id),
   );
 }
+export function createCalendarEvent(
+  title: string,
+  startedAt: string,
+  initialContent: string,
+): EventRecord {
+  const now = new Date().toISOString();
+  return parseEvent({
+    id: crypto.randomUUID(),
+    title,
+    startedAt,
+    endedAt: null,
+    pinned: false,
+    createdAt: now,
+    updatedAt: now,
+    entries: [
+      {
+        id: crypto.randomUUID(),
+        content: initialContent.trim() || title,
+        occurredAt: startedAt,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+  });
+}
 export function parseEvent(value: unknown): EventRecord {
   if (
     !object(value) ||

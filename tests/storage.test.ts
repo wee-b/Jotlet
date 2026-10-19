@@ -4,7 +4,7 @@ import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { EventsStore } from '../src/storage.ts';
-import { parseBackup } from '../src/events.ts';
+import { createCalendarEvent, parseBackup } from '../src/events.ts';
 import type { EventRecord } from '../src/events.ts';
 const start = '2026-10-01T02:00:00.000Z';
 const makeEvent = (id: string): EventRecord => ({
@@ -33,6 +33,38 @@ async function fixture() {
     dispose: () => rm(directory, { recursive: true, force: true }),
   };
 }
+
+test('calendar-created events persist one editable initial record with the selected time', async () => {
+  const context = await fixture();
+  try {
+    const store = new EventsStore(context.file);
+    await store.load();
+    const event = createCalendarEvent(
+      '上班',
+      start,
+      '项目讨论\n\n准备本周计划',
+    );
+    await store.save(event);
+    let [saved] = await new EventsStore(context.file).load();
+    assert.equal(saved.entries.length, 1);
+    assert.equal(saved.entries[0].occurredAt, start);
+    assert.equal(saved.entries[0].content, '项目讨论\n\n准备本周计划');
+    await store.save({
+      ...saved,
+      entries: [{ ...saved.entries[0], content: '已记录讨论结果' }],
+    });
+    [saved] = await new EventsStore(context.file).load();
+    assert.equal(saved.entries.length, 1);
+    assert.equal(saved.entries[0].content, '已记录讨论结果');
+    assert.equal(
+      createCalendarEvent('上班', start, '  ').entries[0].content,
+      '上班',
+    );
+    assert.throws(() => createCalendarEvent('上班', 'invalid', '记录'));
+  } finally {
+    await context.dispose();
+  }
+});
 
 test('serializes concurrent events and preserves metadata and timelines across restart', async () => {
   const context = await fixture();

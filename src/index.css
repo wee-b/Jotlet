@@ -25,10 +25,6 @@ textarea,
 summary {
   font: inherit;
 }
-button,
-summary {
-  -webkit-app-region: no-drag;
-}
 button {
   cursor: pointer;
   border: 0;
