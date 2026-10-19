@@ -125,9 +125,13 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 20px 2px 28px;
+  flex-wrap: wrap;
+  padding: 24px 2px 0;
 }
-.settings-actions .cal-primary {
+.settings-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-left: auto;
 }
 #settings-status {
@@ -139,6 +143,7 @@
 }
 .settings-data {
   display: block;
+  margin-top: 24px;
 }
 .settings-data-tools {
   display: flex;
@@ -170,9 +175,13 @@
   padding: 12px 14px;
   background: #f0f3ec;
   border-radius: 7px;
-  color: #68765b;
   font-size: 11px;
   overflow-wrap: anywhere;
+}
+#settings-storage-path,
+#data-path {
+  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
+  color: #29372f;
 }
 .settings-storage-actions {
   display: flex;
@@ -208,5 +217,50 @@
   }
   .settings-row select {
     width: 130px;
+  }
+}
+@media (max-width: 1000px), (max-height: 650px) {
+  .settings-container {
+    padding: 20px 24px 16px;
+  }
+  .settings-heading {
+    margin-bottom: 18px;
+  }
+  .settings-heading h1 {
+    font-size: 23px;
+    margin-top: 5px;
+  }
+  .settings-heading p {
+    margin-top: 6px;
+  }
+  .settings-card {
+    padding: 18px 20px;
+  }
+  .settings-row {
+    padding: 13px 0;
+    gap: 16px;
+  }
+  .settings-data {
+    margin-top: 16px;
+  }
+  .settings-storage {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+  .settings-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    padding: 12px 0;
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+    background: #f8f9f6;
+  }
+  .settings-actions .cal-primary,
+  .settings-actions .cal-secondary {
+    padding: 9px 14px;
+  }
+  .settings-footer {
+    padding-top: 12px;
   }
 }

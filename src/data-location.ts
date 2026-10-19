@@ -15,8 +15,8 @@ import { EventsStore } from './storage.ts';
 import { ScheduleStore } from './schedule-storage.ts';
 import { makeBackup } from './events.ts';
 import type { Result } from './events.ts';
-import { parseJetletBackup } from './jetlet-backup.ts';
-import type { JetletBackup } from './jetlet-backup.ts';
+import { parseJotletBackup } from './jotlet-backup.ts';
+import type { JotletBackup } from './jotlet-backup.ts';
 
 export interface DataLocation {
   directory: string;
@@ -114,9 +114,9 @@ export class DataLocationManager {
   }
   async restore(
     directory: string,
-    backup: JetletBackup,
+    backup: JotletBackup,
   ): Promise<DataLocation> {
-    const data = parseJetletBackup(JSON.stringify(backup));
+    const data = parseJotletBackup(JSON.stringify(backup));
     const target = await this.emptyTarget(directory);
     const created: string[] = [];
     try {

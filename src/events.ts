@@ -39,7 +39,7 @@ export interface EventsAPI {
   remove(id: string): Promise<Result<void>>;
   importEvents(): Promise<Result<ImportSummary | null>>;
   exportEvents(
-    format: 'jetlet' | 'json' | 'markdown',
+    format: 'jotlet' | 'json' | 'markdown',
   ): Promise<Result<string | null>>;
 }
 

@@ -11,9 +11,9 @@ import {
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { DataLocationManager } from '../src/data-location.ts';
-import { makeJetletBackup } from '../src/jetlet-backup.ts';
+import { makeJotletBackup } from '../src/jotlet-backup.ts';
 const stamp = '2026-10-19T02:00:00.000Z';
-test('restoring .jetlet switches the active dataset and location together, retaining originals', async () => {
+test('restoring .jotlet switches the active dataset and location together, retaining originals', async () => {
   const f = await fixture();
   try {
     await seed(f.manager);
@@ -21,7 +21,7 @@ test('restoring .jetlet switches the active dataset and location together, retai
     const events = await f.manager.events.load();
     events[0].title = '备份中的项目';
     const schedules = await f.manager.schedules.load();
-    const archive = makeJetletBackup(events, schedules);
+    const archive = makeJotletBackup(events, schedules);
     const location = await f.manager.restore(f.target, archive);
     assert.equal(location.directory, f.target);
     assert.equal((await f.manager.events.load())[0].title, '备份中的项目');
@@ -43,11 +43,11 @@ test('restoring .jetlet switches the active dataset and location together, retai
     await f.dispose();
   }
 });
-test('failed .jetlet restore never switches location and removes incomplete destination data', async () => {
+test('failed .jotlet restore never switches location and removes incomplete destination data', async () => {
   const f = await fixture();
   try {
     await seed(f.manager);
-    const archive = makeJetletBackup([], []);
+    const archive = makeJotletBackup([], []);
     await assert.rejects(
       f.manager.restore(f.target, { ...archive, version: 99 } as never),
     );

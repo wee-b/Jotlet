@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { makeJetletBackup, parseJetletBackup } from '../src/jetlet-backup.ts';
+import { makeJotletBackup, parseJotletBackup } from '../src/jotlet-backup.ts';
 import type { EventRecord } from '../src/events.ts';
 import type { Schedule } from '../src/schedules.ts';
 const stamp = '2026-10-19T02:00:00.000Z';
@@ -34,23 +34,23 @@ const schedule: Schedule = {
   createdAt: stamp,
   updatedAt: stamp,
 };
-test('.jetlet round-trips events, records, schedules, colors and optional associations', () => {
-  const archive = makeJetletBackup(
+test('.jotlet round-trips events, records, schedules, colors and optional associations', () => {
+  const archive = makeJotletBackup(
     [event],
     [schedule, { ...schedule, id: 'independent', eventId: null }],
   );
-  const restored = parseJetletBackup('\uFEFF' + JSON.stringify(archive));
+  const restored = parseJotletBackup('\uFEFF' + JSON.stringify(archive));
   assert.deepEqual(restored, archive);
   assert.deepEqual(restored.events, [event]);
   assert.deepEqual(restored.schedules[0], schedule);
   assert.equal(restored.schedules[1].eventId, null);
   assert.deepEqual(
-    parseJetletBackup(JSON.stringify(makeJetletBackup([], []))).events,
+    parseJotletBackup(JSON.stringify(makeJotletBackup([], []))).events,
     [],
   );
 });
-test('.jetlet rejects malformed data, unsupported versions and duplicate IDs before restoring', () => {
-  const archive = makeJetletBackup([event], [schedule]);
+test('.jotlet rejects malformed data, unsupported versions and duplicate IDs before restoring', () => {
+  const archive = makeJotletBackup([event], [schedule]);
   for (const patch of [
     { format: 'other' },
     { version: 9 },
@@ -65,8 +65,8 @@ test('.jetlet rejects malformed data, unsupported versions and duplicate IDs bef
     },
   ])
     assert.throws(() =>
-      parseJetletBackup(JSON.stringify({ ...archive, ...patch })),
+      parseJotletBackup(JSON.stringify({ ...archive, ...patch })),
     );
   for (const text of ['broken', 'null', '[]', '{}'])
-    assert.throws(() => parseJetletBackup(text));
+    assert.throws(() => parseJotletBackup(text));
 });

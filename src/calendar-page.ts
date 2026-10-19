@@ -24,7 +24,6 @@ const paths: Record<string, string> = {
   arrow: '<path d="m14 6-6 6 6 6"/>',
   down: '<path d="m7 10 5 5 5-5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
-  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   link: '<path d="m10 14 4-4m-6 6-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 2 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 -1)"/>',
   text: '<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -84,7 +83,6 @@ export function createCalendar(options: Options) {
   root.innerHTML = `
     <aside class="cal-sidebar">
       <section class="mini-calendar" aria-label="迷你月历"><div class="mini-toolbar"><h2 id="mini-title"></h2><div><button class="cal-icon-button" id="mini-prev" aria-label="迷你月历上个月">${svg('arrow')}</button><button class="cal-icon-button" id="mini-next" aria-label="迷你月历下个月">${svg('arrow', 'flipped')}</button></div></div><div class="mini-weekdays">${['日', '一', '二', '三', '四', '五', '六'].map((day) => `<span>${day}</span>`).join('')}</div><div id="mini-days" class="mini-days"></div></section>
-      <label class="cal-search">${svg('search')}<input id="schedule-search" type="search" aria-label="搜索日程" placeholder="搜索日程…"><kbd>Ctrl K</kbd></label>
       <section class="day-agenda"><div class="sidebar-section-title"><h2 id="agenda-heading">当天日程</h2><span id="agenda-count"></span></div><p id="agenda-date"></p><div id="agenda-list"></div></section>
       <div class="sidebar-bottom"><div class="calendar-note">${svg('leaf')}<p>把时间，留给重要的事。<span>也给自己留一点空白。</span></p></div><span class="calendar-storage"><i></i>离线可用 · 数据只在本机</span></div>
     </aside>
@@ -113,7 +111,7 @@ export function createCalendar(options: Options) {
   createWindowControls(header, options.notify);
   const calendarActions = header.querySelector<HTMLElement>('.topbar-right')!;
   calendarActions.className = 'calendar-page-actions';
-  root.querySelector('.calendar-title-group')!.after(calendarActions);
+  root.querySelector('.calendar-toolbar')!.append(calendarActions);
   oldApp.after(root, dialog, deleteDialog);
   // Shared overlays must remain visible while the event workspace is hidden.
   document.body.append(
@@ -128,7 +126,7 @@ export function createCalendar(options: Options) {
   let selected = addDays(new Date(), 0);
   let miniDate = selected;
   let schedules: Schedule[] = [];
-  let search = '';
+
   let linkedOnly = false;
   let ready = false;
   let busy = false;
@@ -158,7 +156,7 @@ export function createCalendar(options: Options) {
   }
   const today = () => dateKey(new Date());
   const filtered = () =>
-    filterSchedules(schedules, options.getEvents(), search, linkedOnly);
+    filterSchedules(schedules, options.getEvents(), '', linkedOnly);
   const itemsFor = (day: Date) =>
     filtered()
       .filter((item) => onDay(item, day))
@@ -257,7 +255,7 @@ export function createCalendar(options: Options) {
     if (!items.length) {
       const empty = document.createElement('div');
       empty.className = 'agenda-empty';
-      empty.innerHTML = `${svg('calendar')}<p>${search ? '没有匹配的日程' : linkedOnly ? '这一天，没有绑定事件的日程' : '这一天，还没有安排'}</p><button class="cal-text-button" ${ready ? '' : 'disabled'}>＋ 添加一个日程</button>`;
+      empty.innerHTML = `${svg('calendar')}<p>${linkedOnly ? '这一天，没有绑定事件的日程' : '这一天，还没有安排'}</p><button class="cal-text-button" ${ready ? '' : 'disabled'}>＋ 添加一个日程</button>`;
       empty
         .querySelector('button')!
         .addEventListener('click', () => openSchedule(selected));
@@ -303,10 +301,11 @@ export function createCalendar(options: Options) {
       const items = itemsFor(day);
       const eventList = document.createElement('div');
       eventList.className = 'month-day-events';
+      eventList.dataset.total = String(items.length);
       items
         .slice(0, 3)
         .forEach((item) => eventList.append(scheduleButton(item)));
-      if (items.length > 3) {
+      if (items.length) {
         const more = document.createElement('button');
         more.className = 'more-schedules';
         more.textContent = `还有 ${items.length - 3} 个日程`;
@@ -320,6 +319,36 @@ export function createCalendar(options: Options) {
       }
       cell.append(eventList);
       grid.append(cell);
+    });
+    fitMonthSchedules();
+  }
+  function fitMonthSchedules() {
+    if (root.hidden || view !== 'month') return;
+    root.querySelectorAll<HTMLElement>('.month-day-events').forEach((list) => {
+      const buttons = [
+        ...list.querySelectorAll<HTMLElement>('.month-schedule'),
+      ];
+      const more = list.querySelector<HTMLElement>('.more-schedules');
+      if (!buttons.length || !more) return;
+      const cell = list.parentElement!;
+      const total = Number(list.dataset.total);
+      const available =
+        cell.getBoundingClientRect().bottom -
+        list.getBoundingClientRect().top -
+        parseFloat(getComputedStyle(cell).paddingBottom);
+      const gap = parseFloat(getComputedStyle(list).rowGap);
+      const itemHeight = parseFloat(getComputedStyle(buttons[0]).height);
+      more.hidden = false;
+      const moreHeight = more.getBoundingClientRect().height;
+      let count = buttons.length;
+      while (count > 0) {
+        const height = count * (itemHeight + gap) - gap;
+        if (height + (count < total ? moreHeight + gap : 0) <= available) break;
+        count--;
+      }
+      buttons.forEach((button, index) => (button.hidden = index >= count));
+      more.hidden = count === total;
+      more.textContent = `还有 ${total - count} 个日程`;
     });
   }
   function renderWeek() {
@@ -523,7 +552,7 @@ export function createCalendar(options: Options) {
         new Date(item.start) < visibleEnd && new Date(item.end) > visibleStart,
     ).length;
     $('#visible-schedule-count').textContent =
-      `${linkedOnly ? '只显示事件 · ' : ''}${search ? '搜索结果 · ' : ''}${count} 个日程`;
+      `${linkedOnly ? '只显示事件 · ' : ''}${count} 个日程`;
   }
   async function navigate(page: 'calendar' | 'events' | 'settings') {
     try {
@@ -700,12 +729,6 @@ export function createCalendar(options: Options) {
         render();
       }),
     );
-  $('#schedule-search').addEventListener('input', () => {
-    search = $<HTMLInputElement>('#schedule-search')
-      .value.trim()
-      .toLocaleLowerCase();
-    render();
-  });
   $('#close-schedule').addEventListener('click', () => dialog.close());
   $('#cancel-schedule').addEventListener('click', () => dialog.close());
   dialog.addEventListener('cancel', (event) => {
@@ -870,12 +893,9 @@ export function createCalendar(options: Options) {
       event.preventDefault();
       openSchedule(selected);
     }
-    if (event.key.toLowerCase() === 'k') {
-      event.preventDefault();
-      $('#schedule-search').focus();
-    }
   });
   oldApp.hidden = true;
+  new ResizeObserver(fitMonthSchedules).observe($('#calendar-content'));
   document.body.classList.add('calendar-active');
   render();
   setInterval(updateNow, 60_000);
