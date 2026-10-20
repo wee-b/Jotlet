@@ -29,16 +29,27 @@ export function startApp() {
     },
     beforeDataChange: events.flush,
   });
-  bindDataActions({
+  const parser = bindDataActions({
     run: events.run,
     flush: events.flush,
     notify,
     imported(summary) {
+      document
+        .querySelectorAll<HTMLDialogElement>('dialog[open]')
+        .forEach((dialog) => {
+          if (dialog.id !== 'backup-parser') dialog.close();
+        });
       events.replaceEvents(summary.events, summary.dataPath);
       if (summary.schedules) calendar.replaceSchedules(summary.schedules);
       settings.refresh();
     },
   });
+  window.jotletBackup?.onOpenFile(
+    (filePath) => void parser.open(filePath, true),
+  );
+  void Promise.all([events.initialized, calendar.initialized]).then(() =>
+    window.jotletBackup?.ready(),
+  );
 
   for (const selector of ['.calendar-storage', '.sidebar-footer']) {
     const button = document.createElement('button');

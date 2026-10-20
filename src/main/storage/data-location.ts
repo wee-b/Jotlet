@@ -6,11 +6,13 @@ import {
   readFile,
   realpath,
   rename,
+  rm,
   unlink,
   writeFile,
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { EventsStore } from './event-store.ts';
 import { ScheduleStore } from './schedule-store.ts';
 import { makeBackup } from '../../shared/events.ts';
@@ -23,10 +25,21 @@ const dataFiles = [
   'notes.json',
   'notes.json.bak',
   'notes.json.v1.bak',
+  'notes.json.journal',
   'calendar.json',
   'calendar.json.bak',
+  'calendar.json.journal',
 ];
-const reservedFiles = [...dataFiles, 'notes.json.tmp', 'calendar.json.tmp'];
+const reservedFiles = [
+  ...dataFiles,
+  'notes.json.tmp',
+  'calendar.json.tmp',
+  'notes.json.journal.tmp',
+  'calendar.json.journal.tmp',
+  'active-dataset.json',
+  'active-dataset.json.tmp',
+  '.jotlet-datasets',
+];
 const missing = (error: unknown) =>
   (error as NodeJS.ErrnoException).code === 'ENOENT';
 
@@ -35,8 +48,10 @@ export class DataLocationManager {
   schedules!: ScheduleStore;
   readonly configPath: string;
   private defaultDirectory: string;
+  private directory: string;
   constructor(defaultDirectory: string) {
     this.defaultDirectory = defaultDirectory;
+    this.directory = defaultDirectory;
     this.configPath = path.join(defaultDirectory, 'data-location.json');
     this.useDirectory(defaultDirectory);
   }
@@ -46,30 +61,61 @@ export class DataLocationManager {
   }
   get location(): DataLocation {
     return {
-      directory: path.dirname(this.events.filePath),
+      directory: this.directory,
       eventsPath: this.events.filePath,
       calendarPath: this.schedules.filePath,
     };
   }
   async initialize() {
-    let text: string;
+    let directory = this.defaultDirectory;
+    let custom = false;
     try {
-      text = await readFile(this.configPath, 'utf8');
+      const config = JSON.parse(await readFile(this.configPath, 'utf8'));
+      if (
+        config?.version !== 1 ||
+        typeof config.directory !== 'string' ||
+        !path.isAbsolute(config.directory)
+      )
+        throw new Error(`数据位置配置无效，请检查 ${this.configPath}。`);
+      directory = config.directory;
+      custom = true;
     } catch (error) {
-      if (missing(error)) return;
-      throw error;
+      if (!missing(error)) throw error;
     }
-    const config = JSON.parse(text);
-    if (
-      config?.version !== 1 ||
-      typeof config.directory !== 'string' ||
-      !path.isAbsolute(config.directory)
-    )
-      throw new Error(`数据位置配置无效，请检查 ${this.configPath}。`);
+    const stores = await this.storesForDirectory(directory);
     // A missing custom directory must never silently become an empty database.
-    await access(path.join(config.directory, 'notes.json'));
-    await access(path.join(config.directory, 'calendar.json'));
-    this.useDirectory(config.directory);
+    if (custom) {
+      await access(stores.events.filePath);
+      await access(stores.schedules.filePath);
+    }
+    this.directory = directory;
+    this.events = stores.events;
+    this.schedules = stores.schedules;
+  }
+  private async storesForDirectory(directory: string) {
+    let dataset = directory;
+    try {
+      const pointer = JSON.parse(
+        await readFile(path.join(directory, 'active-dataset.json'), 'utf8'),
+      );
+      if (
+        pointer?.version !== 1 ||
+        typeof pointer.generation !== 'string' ||
+        !/^[a-f0-9-]{36}$/.test(pointer.generation)
+      )
+        throw new Error('导入数据位置记录无效，请检查 active-dataset.json。');
+      dataset = path.join(directory, '.jotlet-datasets', pointer.generation);
+      await access(path.join(dataset, 'notes.json'));
+      await access(path.join(dataset, 'calendar.json'));
+    } catch (error) {
+      // Only a missing pointer means a legacy directory; missing pointed-to files
+      // must fail instead of falling back to old data.
+      if (!missing(error) || dataset !== directory) throw error;
+    }
+    return {
+      events: new EventsStore(path.join(dataset, 'notes.json')),
+      schedules: new ScheduleStore(path.join(dataset, 'calendar.json')),
+    };
   }
   private async emptyTarget(directory: string) {
     if (!path.isAbsolute(directory))
@@ -115,16 +161,21 @@ export class DataLocationManager {
           throw error;
         }
       };
+      const hasPointer = await hasFile('active-dataset.json');
       const [hasEvents, hasCalendar] = await Promise.all([
         hasFile('notes.json'),
         hasFile('calendar.json'),
       ]);
-      if (hasEvents || hasCalendar) {
+      if (hasEvents || hasCalendar || hasPointer) {
         const [events, schedules] = await Promise.all([
           this.events.load(),
           this.schedules.load(),
         ]);
-        if (!hasEvents || !hasCalendar || events.length || schedules.length)
+        if (
+          (!hasPointer && (!hasEvents || !hasCalendar)) ||
+          events.length ||
+          schedules.length
+        )
           throw new Error(
             '安装时选择的目录已有数据，无法自动覆盖或合并。请保留现有数据并重新选择空文件夹。',
           );
@@ -141,8 +192,8 @@ export class DataLocationManager {
     await rename(`${appliedPath}.tmp`, appliedPath);
   }
   private async commitDirectory(target: string) {
-    const nextEvents = new EventsStore(path.join(target, 'notes.json'));
-    const nextSchedules = new ScheduleStore(path.join(target, 'calendar.json'));
+    const { events: nextEvents, schedules: nextSchedules } =
+      await this.storesForDirectory(target);
     await nextEvents.load();
     await nextSchedules.load();
     await mkdir(this.defaultDirectory, { recursive: true });
@@ -154,7 +205,52 @@ export class DataLocationManager {
     await rename(`${this.configPath}.tmp`, this.configPath);
     this.events = nextEvents;
     this.schedules = nextSchedules;
+    this.directory = target;
     return this.location;
+  }
+  // Bulk import stages both datasets, then commits one durable pointer. A failed
+  // import never leaves events and calendar from different generations active.
+  async replaceData(backup: JotletBackup): Promise<DataLocation> {
+    const data = parseJotletBackup(JSON.stringify(backup));
+    const generation = randomUUID();
+    const dataset = path.join(this.directory, '.jotlet-datasets', generation);
+    await mkdir(dataset, { recursive: true });
+    try {
+      await writeFile(
+        path.join(dataset, 'notes.json'),
+        JSON.stringify(makeBackup(data.events)),
+        { flag: 'wx', encoding: 'utf8', flush: true },
+      );
+      await writeFile(
+        path.join(dataset, 'calendar.json'),
+        JSON.stringify({
+          app: 'jotlet-calendar',
+          version: 2,
+          schedules: data.schedules,
+        }),
+        { flag: 'wx', encoding: 'utf8', flush: true },
+      );
+      const nextEvents = new EventsStore(path.join(dataset, 'notes.json'));
+      const nextSchedules = new ScheduleStore(
+        path.join(dataset, 'calendar.json'),
+      );
+      await nextEvents.load();
+      await nextSchedules.load();
+      const pointer = path.join(this.directory, 'active-dataset.json');
+      await writeFile(
+        `${pointer}.tmp`,
+        JSON.stringify({ version: 1, generation }),
+        { encoding: 'utf8', flush: true },
+      );
+      await rename(`${pointer}.tmp`, pointer);
+      this.events = nextEvents;
+      this.schedules = nextSchedules;
+      return this.location;
+    } catch (error) {
+      // dataset is a UUID child created by this operation under the selected directory.
+      await rm(dataset, { recursive: true, force: true });
+      throw error;
+    }
   }
   async restore(
     directory: string,
@@ -190,8 +286,9 @@ export class DataLocationManager {
   // Call under the main process data-operation queue, including saves and exports.
   async relocate(directory: string): Promise<DataLocation> {
     await mkdir(this.location.directory, { recursive: true });
-    const source = await realpath(this.location.directory);
-    if (source === (await realpath(directory))) return this.location;
+    const sourceDirectory = await realpath(this.location.directory);
+    if (sourceDirectory === (await realpath(directory))) return this.location;
+    const source = path.dirname(this.events.filePath);
     const target = await this.emptyTarget(directory);
     const events = await this.events.load();
     const schedules = await this.schedules.load();

@@ -1,5 +1,6 @@
 import type { EventRecord, ImportSummary } from './events';
 import type { Schedule } from './schedules';
+import type { BackupPreview, ImportMode } from './import';
 
 export interface WindowState {
   maximized: boolean;
@@ -35,8 +36,18 @@ export interface EventsAPI {
   load(): Promise<Result<{ events: EventRecord[]; dataPath: string }>>;
   save(event: EventRecord): Promise<Result<EventRecord>>;
   remove(id: string): Promise<Result<void>>;
-  importEvents(): Promise<Result<ImportSummary | null>>;
   exportEvents(
     format: 'jotlet' | 'json' | 'markdown',
   ): Promise<Result<string | null>>;
+}
+
+export interface BackupAPI {
+  chooseFile(): Promise<Result<string | null>>;
+  analyze(filePath: string): Promise<Result<BackupPreview>>;
+  commit(token: string, mode: ImportMode): Promise<Result<ImportSummary>>;
+  discard(token: string): Promise<Result<void>>;
+  filePath(file: File): string;
+  onOpenFile(listener: (filePath: string) => void): () => void;
+  ready(): Promise<Result<void>>;
+  busy(): Promise<Result<void>>;
 }

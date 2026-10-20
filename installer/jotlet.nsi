@@ -13,9 +13,11 @@ SetCompressorDictSize 32
 !ifdef TEST_ID
   !define PRODUCT_KEY "Software\JotletInstallerTests\${TEST_ID}"
   !define UNINSTALL_KEY "Software\JotletInstallerTests\${TEST_ID}\Uninstall"
+  !define CLASSES_KEY "Software\JotletAssociationTests\${TEST_ID}"
 !else
   !define PRODUCT_KEY "Software\Jotlet"
   !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Jotlet"
+  !define CLASSES_KEY "Software\Classes"
 !endif
 
 Name "Jotlet"
@@ -303,6 +305,18 @@ Section "安装 Jotlet"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "${PRODUCT_KEY}" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "${PRODUCT_KEY}" "DataDirectory" "$DataDir"
+  ReadRegStr $0 HKCU "${CLASSES_KEY}\.jotlet" ""
+  ${If} $0 != "Jotlet.Backup"
+    WriteRegStr HKCU "${PRODUCT_KEY}" "PreviousJotletAssociation" "$0"
+  ${EndIf}
+  WriteRegStr HKCU "${CLASSES_KEY}\.jotlet" "" "Jotlet.Backup"
+  WriteRegStr HKCU "${CLASSES_KEY}\.jotlet\OpenWithProgids" "Jotlet.Backup" ""
+  WriteRegStr HKCU "${CLASSES_KEY}\Jotlet.Backup" "" "Jotlet 完整备份"
+  WriteRegStr HKCU "${CLASSES_KEY}\Jotlet.Backup\DefaultIcon" "" '$\"$INSTDIR\jotlet.exe$\",0'
+  WriteRegStr HKCU "${CLASSES_KEY}\Jotlet.Backup\shell\open\command" "" '$\"$INSTDIR\jotlet.exe$\" $\"%1$\"'
+  !ifndef TEST_ID
+    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
+  !endif
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "Jotlet"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "Jotlet"
@@ -346,6 +360,25 @@ Section "Uninstall"
   RMDir "$INSTDIR"
   ReadRegStr $0 HKCU "${PRODUCT_KEY}" "InstallDir"
   ${If} $0 == $INSTDIR
+    ReadRegStr $1 HKCU "${CLASSES_KEY}\Jotlet.Backup\shell\open\command" ""
+    ${If} $1 == '$\"$INSTDIR\jotlet.exe$\" $\"%1$\"'
+      ReadRegStr $1 HKCU "${CLASSES_KEY}\.jotlet" ""
+      ${If} $1 == "Jotlet.Backup"
+        ReadRegStr $1 HKCU "${PRODUCT_KEY}" "PreviousJotletAssociation"
+        ${If} $1 == ""
+          DeleteRegValue HKCU "${CLASSES_KEY}\.jotlet" ""
+        ${Else}
+          WriteRegStr HKCU "${CLASSES_KEY}\.jotlet" "" "$1"
+        ${EndIf}
+      ${EndIf}
+      DeleteRegValue HKCU "${CLASSES_KEY}\.jotlet\OpenWithProgids" "Jotlet.Backup"
+      DeleteRegKey /ifempty HKCU "${CLASSES_KEY}\.jotlet\OpenWithProgids"
+      DeleteRegKey /ifempty HKCU "${CLASSES_KEY}\.jotlet"
+      DeleteRegKey HKCU "${CLASSES_KEY}\Jotlet.Backup"
+      !ifndef TEST_ID
+        System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
+      !endif
+    ${EndIf}
     DeleteRegKey HKCU "${PRODUCT_KEY}"
     DeleteRegKey HKCU "${UNINSTALL_KEY}"
     !ifndef TEST_ID

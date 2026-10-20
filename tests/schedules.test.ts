@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+  rename,
+  readdir,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -169,14 +177,26 @@ test('calendar persistence serializes writes, preserves optional associations an
       createdAt: '2027-01-01T00:00:00.000Z',
     });
     assert.equal(saved.createdAt, schedule().createdAt);
-    assert.equal(
-      JSON.parse(await readFile(`${file}.bak`, 'utf8')).schedules.length,
-      2,
+    const snapshot = await readFile(file, 'utf8');
+    assert.equal(JSON.parse(snapshot).schedules.length, 0);
+    const transactions = (await readFile(store.journalPath, 'utf8'))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    assert.equal(transactions.length, 3);
+    assert.deepEqual(
+      transactions.map((item) => item.upserts.length),
+      [1, 1, 1],
     );
     loaded[0].title = '外部修改';
     assert.notEqual((await store.load())[0].title, '外部修改');
     await store.remove('1');
     assert.equal((await new ScheduleStore(file).load()).length, 1);
+    assert.equal(await readFile(file, 'utf8'), snapshot);
+    assert.deepEqual((await readdir(directory)).sort(), [
+      'calendar.json',
+      'calendar.json.journal',
+    ]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -194,11 +214,13 @@ test('corrupt calendar data blocks writes and failed writes leave committed data
     await rm(file);
     const store = new ScheduleStore(file);
     await store.save(schedule('1'));
-    await mkdir(`${file}.tmp`);
+    await rename(store.journalPath, `${store.journalPath}.held`);
+    await mkdir(store.journalPath);
     await assert.rejects(store.save(schedule('2')));
     assert.equal((await store.load()).length, 1);
+    await rm(store.journalPath, { recursive: true });
+    await rename(`${store.journalPath}.held`, store.journalPath);
     assert.equal((await new ScheduleStore(file).load()).length, 1);
-    await rm(`${file}.tmp`, { recursive: true });
     await store.save(schedule('2'));
     assert.equal((await store.load()).length, 2);
   } finally {

@@ -17,6 +17,47 @@ const payload = path.join(testRoot, 'payload');
 const program = path.join(testRoot, '安装程序 空格');
 const data = path.join(testRoot, '数据目录 空格');
 const output = path.join(testRoot, 'Setup.exe');
+const associationKey = `HKCU\\Software\\JotletAssociationTests\\${id}`;
+const registry = (...args: string[]) =>
+  execute('reg.exe', [...args, '/reg:64'], { windowsHide: true });
+const queryAssociation = async (suffix: string, value?: string) => {
+  const { stdout } = await execute(
+    'reg.exe',
+    [
+      'query',
+      `${associationKey}\\${suffix}`,
+      ...(value ? ['/v', value] : ['/ve']),
+      '/reg:64',
+    ],
+    { windowsHide: true, encoding: 'buffer' },
+  );
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(stdout);
+  } catch {
+    return new TextDecoder('gb18030').decode(stdout);
+  }
+};
+await registry(
+  'add',
+  `${associationKey}\\.jotlet`,
+  '/ve',
+  '/t',
+  'REG_SZ',
+  '/d',
+  'Other.Backup',
+  '/f',
+);
+await registry(
+  'add',
+  `${associationKey}\\.jotlet\\OpenWithProgids`,
+  '/v',
+  'Other.Backup',
+  '/t',
+  'REG_SZ',
+  '/d',
+  '',
+  '/f',
+);
 await mkdir(path.join(payload, 'resources'), { recursive: true });
 await writeFile(path.join(payload, 'jotlet.exe'), 'isolated test fixture');
 await writeFile(path.join(payload, 'resources', '中文.txt'), 'payload');
@@ -36,6 +77,17 @@ const runSetup = (installPath: string, dataPath: string) =>
 // Directory and registry operations here are confined to the freshly created fixture.
 await mkdir(program);
 await runSetup(program, data);
+assert.ok((await queryAssociation('.jotlet')).includes('Jotlet.Backup'));
+assert.ok(
+  (await queryAssociation('Jotlet.Backup\\shell\\open\\command')).includes(
+    `"${program}\\jotlet.exe" "%1"`,
+  ),
+);
+assert.ok(
+  (await queryAssociation('Jotlet.Backup\\DefaultIcon')).includes(
+    `"${program}\\jotlet.exe",0`,
+  ),
+);
 assert.equal(
   await readFile(path.join(program, 'jotlet.exe'), 'utf8'),
   'isolated test fixture',
@@ -54,6 +106,11 @@ await writeFile(
 await runSetup(program, data);
 const movedProgram = path.join(testRoot, '新的程序目录');
 await runSetup(movedProgram, data);
+assert.ok(
+  (await queryAssociation('Jotlet.Backup\\shell\\open\\command')).includes(
+    `"${movedProgram}\\jotlet.exe" "%1"`,
+  ),
+);
 await access(path.join(movedProgram, 'jotlet.exe'));
 await assert.rejects(access(path.join(program, 'jotlet.exe')));
 assert.equal(
@@ -65,6 +122,16 @@ await execute(output, ['/S', '/MODE=uninstall'], {
   windowsHide: true,
   timeout: 30_000,
 });
+assert.ok((await queryAssociation('.jotlet')).includes('Other.Backup'));
+assert.ok(
+  (await queryAssociation('.jotlet\\OpenWithProgids', 'Other.Backup')).includes(
+    'Other.Backup',
+  ),
+);
+await assert.rejects(queryAssociation('Jotlet.Backup'));
+await assert.rejects(
+  queryAssociation('.jotlet\\OpenWithProgids', 'Jotlet.Backup'),
+);
 assert.equal(
   await readFile(path.join(data, 'notes.json'), 'utf8'),
   'retained user data',
@@ -97,6 +164,26 @@ await assert.rejects(
     path.join(testRoot, 'overlap', 'data'),
   ),
 );
+// If the user changes the default after installation, uninstall preserves it.
+const associationProgram = path.join(testRoot, 'association-program');
+await runSetup(associationProgram, data);
+await registry(
+  'add',
+  `${associationKey}\\.jotlet`,
+  '/ve',
+  '/t',
+  'REG_SZ',
+  '/d',
+  'Other.AfterInstall',
+  '/f',
+);
+await execute(output, ['/S', '/MODE=uninstall'], {
+  windowsHide: true,
+  timeout: 30_000,
+});
+assert.ok((await queryAssociation('.jotlet')).includes('Other.AfterInstall'));
+await assert.rejects(queryAssociation('Jotlet.Backup'));
+await registry('delete', associationKey, '/f');
 console.log(
-  `PASS: installation/uninstallation; Unicode paths; selected data directory; data retention; unrelated files and overlapping directory protection. Fixture: ${testRoot}`,
+  `PASS: installation/uninstallation; file association, quoted commands and icons; previous/user-changed defaults; Unicode paths; selected data directory; data retention; unrelated files and overlapping directory protection. Fixture: ${testRoot}`,
 );

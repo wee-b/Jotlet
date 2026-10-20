@@ -54,10 +54,10 @@ export function settingsTemplate() {
       <section class="settings-card settings-data">
         <div class="settings-card-heading">
           <h2>数据与备份</h2>
-          <p>导出 .jotlet 完整备份，包含事件、记录、日程与关联关系。导入时选择新的保存文件夹，成功后自动切换。</p>
+          <p>导出 .jotlet 完整备份，包含事件、记录、日程与关联关系。导入前先解析预览，再选择合并或覆盖当前数据。</p>
         </div>
         <div id="settings-transfer-actions" class="settings-data-tools">
-          <button class="import-button" disabled>${icon('import')} 导入数据 <span>.jotlet</span></button>
+          <button class="import-button" disabled>${icon('import')} 解析与导入 <span>.jotlet</span></button>
           <details class="export-menu">
             <summary>${icon('export')} 导出 ${icon('down')}</summary>
             <div class="dropdown">

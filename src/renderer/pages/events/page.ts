@@ -545,9 +545,10 @@ export function createEventsPage(options: { changed(): void }) {
       toast(message(error), true);
     }
   }
-  void initialize();
+  const initialized = initialize();
 
   return {
+    initialized,
     root: $('#app'),
     getEvents: () => events,
     flush,

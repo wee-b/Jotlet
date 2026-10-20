@@ -1,17 +1,19 @@
 import { dialog, ipcMain } from 'electron';
 import type { BrowserWindow } from 'electron';
-import { readFile, stat, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { makeBackup, parseEvent, toMarkdown } from '../shared/events';
 import type { Result } from '../shared/api';
 import { parseSchedule } from '../shared/schedules';
-import { makeJotletBackup, parseJotletBackup } from '../shared/backup';
+import { makeJotletBackup } from '../shared/backup';
+import { BackupImport } from './storage/backup-import';
 import type { DataLocationManager } from './storage/data-location';
 
 export function registerHandlers(
   getWindow: () => BrowserWindow | null,
   dataLocation: DataLocationManager,
   updateInstallationHint: () => Promise<void>,
+  onBackupReady: (ready: boolean) => void,
 ) {
   let store = dataLocation.events;
   let scheduleStore = dataLocation.schedules;
@@ -97,52 +99,38 @@ export function registerHandlers(
     return store.remove(id);
   });
 
-  handle('events:import', async () => {
+  const backupImport = new BackupImport(dataLocation);
+  handle('backup:ready', async () => onBackupReady(true));
+  handle('backup:busy', async () => onBackupReady(false));
+  handle('backup:choose-file', async () => {
     if (fileDialogOpen) return null;
     fileDialogOpen = true;
     try {
       const selection = await dialog.showOpenDialog(getWindow()!, {
-        title: '选择要导入的 Jotlet 数据文件',
+        title: '选择要解析的 Jotlet 备份',
         properties: ['openFile'],
         filters: [{ name: 'Jotlet 专属备份', extensions: ['jotlet'] }],
       });
-      if (selection.canceled) return null;
-      if (selection.filePaths.length !== 1)
-        throw new Error('请单独选择一个 .jotlet 完整备份文件。');
-      const filePath = selection.filePaths[0];
-      if (path.extname(filePath).toLowerCase() !== '.jotlet')
-        throw new Error('仅支持导入 .jotlet 完整备份文件。');
-      const fileInfo = await stat(filePath);
-      if (!fileInfo.isFile() || fileInfo.size > 20 * 1024 * 1024)
-        throw new Error('请选择不超过 20 MB 的 .jotlet 文件。');
-      const archive = parseJotletBackup(await readFile(filePath, 'utf8'));
-      const destination = await dialog.showOpenDialog(getWindow()!, {
-        title: '选择导入后的数据保存文件夹',
-        properties: ['openDirectory', 'createDirectory'],
-        buttonLabel: '导入并使用此文件夹',
-      });
-      if (destination.canceled || !destination.filePaths[0]) return null;
-      const location = await dataLocation.restore(
-        destination.filePaths[0],
-        archive,
-      );
-      await updateInstallationHint();
-      store = dataLocation.events;
-      scheduleStore = dataLocation.schedules;
-      return {
-        added: archive.events.length,
-        skipped: 0,
-        conflicts: 0,
-        events: await store.load(),
-        schedules: await scheduleStore.load(),
-        dataPath: location.eventsPath,
-        directory: location.directory,
-      };
+      return selection.canceled ? null : (selection.filePaths[0] ?? null);
     } finally {
       fileDialogOpen = false;
     }
   });
-
+  handle('backup:analyze', async (filePath) => {
+    if (typeof filePath !== 'string') throw new Error('文件路径无效。');
+    return backupImport.analyze(filePath);
+  });
+  handle('backup:discard', async (token) => {
+    if (typeof token === 'string') backupImport.discard(token);
+  });
+  handle('backup:commit', async (token, mode) => {
+    if (typeof token !== 'string' || (mode !== 'merge' && mode !== 'replace'))
+      throw new Error('导入参数无效。');
+    const summary = await backupImport.commit(token, mode);
+    store = dataLocation.events;
+    scheduleStore = dataLocation.schedules;
+    return summary;
+  });
   handle('events:export', async (format) => {
     if (format !== 'jotlet' && format !== 'json' && format !== 'markdown')
       throw new Error('导出格式无效。');
@@ -176,13 +164,23 @@ export function registerHandlers(
       const protectedPaths = [
         dataLocation.configPath,
         `${dataLocation.configPath}.tmp`,
+        ...[
+          'notes.json',
+          'calendar.json',
+          'active-dataset.json',
+          'active-dataset.json.tmp',
+        ].map((name) => path.join(dataLocation.location.directory, name)),
         store.filePath,
         `${store.filePath}.bak`,
         `${store.filePath}.tmp`,
         `${store.filePath}.v1.bak`,
+        store.journalPath,
+        `${store.journalPath}.tmp`,
         scheduleStore.filePath,
         `${scheduleStore.filePath}.bak`,
         `${scheduleStore.filePath}.tmp`,
+        scheduleStore.journalPath,
+        `${scheduleStore.journalPath}.tmp`,
       ];
       if (
         protectedPaths.some(

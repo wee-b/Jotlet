@@ -200,7 +200,7 @@ export function makeBackup(events: EventRecord[]): Backup {
     events,
   };
 }
-function signature(event: EventRecord): string {
+export function eventSignature(event: EventRecord): string {
   return JSON.stringify([
     event.title,
     event.pinned,
@@ -218,11 +218,11 @@ export function mergeEvents(
 ): ImportSummary {
   const events = structuredClone(existing);
   const ids = new Set(events.map((event) => event.id));
-  const signatures = new Set(events.map(signature));
+  const signatures = new Set(events.map(eventSignature));
   let skipped = 0;
   let conflicts = 0;
   for (const event of incoming) {
-    const key = signature(event);
+    const key = eventSignature(event);
     if (signatures.has(key)) {
       skipped++;
       continue;

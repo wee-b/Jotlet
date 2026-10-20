@@ -8,6 +8,7 @@ import {
 } from './storage/installation';
 import { createMainWindow } from './app-window';
 import { registerHandlers } from './ipc';
+import { backupFromArguments } from './open-backup';
 
 if (process.platform === 'win32')
   app.setAppUserModelId('com.squirrel.jotlet.jotlet');
@@ -16,6 +17,52 @@ if (!app.requestSingleInstanceLock()) app.quit();
 let mainWindow: BrowserWindow | null = null;
 let dataLocation: DataLocationManager;
 let installationHint: string | undefined;
+const pendingFiles: string[] = [];
+const initialFile = backupFromArguments(process.argv, process.cwd());
+if (initialFile) pendingFiles.push(initialFile);
+let rendererReady = false;
+let promptingFile = false;
+
+function receiveBackup(filePath: string) {
+  if (path.extname(filePath).toLowerCase() !== '.jotlet') return;
+  if (!pendingFiles.includes(filePath)) pendingFiles.push(filePath);
+  if (mainWindow?.isMinimized()) mainWindow.restore();
+  mainWindow?.show();
+  mainWindow?.focus();
+  void promptNextBackup();
+}
+async function promptNextBackup() {
+  if (!rendererReady || promptingFile || !mainWindow || !pendingFiles.length)
+    return;
+  promptingFile = true;
+  const window = mainWindow;
+  const filePath = pendingFiles.shift()!;
+  try {
+    const result = await dialog.showMessageBox(window, {
+      type: 'question',
+      title: '导入 Jotlet 备份',
+      message: '要导入此文件吗？',
+      detail: filePath,
+      buttons: ['是，解析文件', '取消'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (result.response === 0 && !window.isDestroyed()) {
+      rendererReady = false;
+      window.webContents.send('backup:open-file', filePath);
+    }
+  } finally {
+    promptingFile = false;
+  }
+  // Further files remain queued until the parser is closed and signals ready.
+  if (rendererReady) void promptNextBackup();
+}
+
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  receiveBackup(filePath);
+});
 
 async function updateInstallationHint() {
   if (installationHint)
@@ -28,7 +75,9 @@ async function updateInstallationHint() {
 }
 
 function createWindow() {
+  rendererReady = false;
   mainWindow = createMainWindow(() => {
+    rendererReady = false;
     mainWindow = null;
   });
 }
@@ -51,7 +100,15 @@ app
         await updateInstallationHint();
       }
     }
-    registerHandlers(() => mainWindow, dataLocation, updateInstallationHint);
+    registerHandlers(
+      () => mainWindow,
+      dataLocation,
+      updateInstallationHint,
+      (ready) => {
+        rendererReady = ready;
+        if (ready) void promptNextBackup();
+      },
+    );
     createWindow();
     app.on('activate', () => {
       if (!mainWindow) createWindow();
@@ -64,7 +121,9 @@ app
     );
     app.quit();
   });
-app.on('second-instance', () => {
+app.on('second-instance', (_event, argv, workingDirectory) => {
+  const filePath = backupFromArguments(argv, workingDirectory);
+  if (filePath) receiveBackup(filePath);
   if (mainWindow?.isMinimized()) mainWindow.restore();
   mainWindow?.focus();
 });

@@ -552,8 +552,9 @@ export function createCalendar(options: Options) {
       $('#calendar-error').textContent = errorText(error);
     }
   }
-  void initialize();
+  const initialized = initialize();
   return {
+    initialized,
     root,
     refresh: render,
     cancelSelection: () => weekView.cancelSelection(),

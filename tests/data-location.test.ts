@@ -113,6 +113,12 @@ test('moving data preserves originals, associations, backup bytes and the persis
   const f = await fixture();
   try {
     await seed(f.manager);
+    const event = (await f.manager.events.load())[0];
+    await f.manager.events.save({ ...event, title: '迁移前更新' });
+    await f.manager.events.save({ ...event, id: 'deleted' });
+    await f.manager.events.remove('deleted');
+    const schedule = (await f.manager.schedules.load())[0];
+    await f.manager.schedules.save({ ...schedule, description: '迁移前更新' });
     const before = await f.manager.events.load();
     const schedules = await f.manager.schedules.load();
     const sourceBytes = await readFile(path.join(f.source, 'notes.json'));
@@ -128,6 +134,11 @@ test('moving data preserves originals, associations, backup bytes and the persis
       sourceBytes,
     );
     assert.deepEqual(await readFile(location.eventsPath), sourceBytes);
+    for (const name of ['notes.json.journal', 'calendar.json.journal'])
+      assert.deepEqual(
+        await readFile(path.join(f.target, name)),
+        await readFile(path.join(f.source, name)),
+      );
     assert.equal(
       await readFile(path.join(f.target, 'notes.json.bak'), 'utf8'),
       'exact previous backup',
@@ -164,6 +175,30 @@ test('occupied destinations are never overwritten, including automatic backup fi
       await readFile(path.join(f.target, 'calendar.json.bak'), 'utf8'),
       'existing data',
     );
+  } finally {
+    await f.dispose();
+  }
+});
+
+test('journal files and their temporary replacements reserve a destination for both restore and relocation', async () => {
+  const f = await fixture();
+  try {
+    for (const name of [
+      'notes.json.journal',
+      'calendar.json.journal',
+      'notes.json.journal.tmp',
+      'calendar.json.journal.tmp',
+    ]) {
+      const file = path.join(f.target, name);
+      await writeFile(file, 'retained journal');
+      await assert.rejects(f.manager.relocate(f.target), /已有 Jotlet 数据/);
+      await assert.rejects(
+        f.manager.restore(f.target, makeJotletBackup([], [])),
+        /已有 Jotlet 数据/,
+      );
+      assert.equal(await readFile(file, 'utf8'), 'retained journal');
+      await rm(file);
+    }
   } finally {
     await f.dispose();
   }
