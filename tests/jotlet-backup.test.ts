@@ -3,7 +3,10 @@ import { test } from 'node:test';
 import { mkdtemp, mkdir, rm, writeFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { readBackupFile } from '../src/main/storage/backup-file.ts';
+import {
+  readBackupFile,
+  writeBackupFile,
+} from '../src/main/storage/backup-file.ts';
 import { DataLocationManager } from '../src/main/storage/data-location.ts';
 import { makeJotletBackup, parseJotletBackup } from '../src/shared/backup.ts';
 import type { EventRecord } from '../src/shared/events.ts';
@@ -88,7 +91,7 @@ test('backups larger than 20 MiB import and restore with all records intact', as
       { ...schedule, eventId: events[0].id },
     ]);
     const file = path.join(root, 'large.JOTLET');
-    await writeFile(file, JSON.stringify(archive));
+    await writeBackupFile(file, archive, []);
     assert.ok((await stat(file)).size > 20 * 1024 * 1024);
     const imported = await readBackupFile(file);
     assert.deepEqual(imported, archive);
@@ -114,9 +117,11 @@ test('backups larger than 20 MiB import and restore with all records intact', as
 test('backup file imports still reject wrong extensions, directories and invalid contents', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'jotlet-backup-file-'));
   try {
-    const wrongExtension = path.join(root, 'backup.json');
-    await writeFile(wrongExtension, JSON.stringify(makeJotletBackup([], [])));
-    await assert.rejects(readBackupFile(wrongExtension), /仅支持导入/);
+    for (const extension of ['json', 'md', 'txt', 'jetlet']) {
+      const wrongExtension = path.join(root, `backup.${extension}`);
+      await writeFile(wrongExtension, JSON.stringify(makeJotletBackup([], [])));
+      await assert.rejects(readBackupFile(wrongExtension), /仅支持导入/);
+    }
     const directory = path.join(root, 'directory.jotlet');
     await mkdir(directory);
     await assert.rejects(readBackupFile(directory), /请选择/);
