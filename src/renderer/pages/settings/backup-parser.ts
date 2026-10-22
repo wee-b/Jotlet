@@ -53,7 +53,10 @@ export function createBackupParser(options: {
     $<HTMLButtonElement>('#backup-analyze').disabled = busy || !filePath;
     for (const selector of ['#backup-merge', '#backup-replace'])
       $<HTMLButtonElement>(selector).disabled =
-        busy || !preview || !$('#backup-replace-confirm').hidden;
+        busy ||
+        !preview ||
+        !$('#backup-replace-confirm').hidden ||
+        (selector === '#backup-merge' && !!preview.localError);
     dialog.setAttribute('aria-busy', String(busy));
   }
   async function discard() {
@@ -76,15 +79,22 @@ export function createBackupParser(options: {
     $('#backup-schedules').textContent = String(value.schedules);
     $('#backup-exported').textContent =
       `备份时间：${new Date(value.exportedAt).toLocaleString('zh-CN')}`;
-    $('#backup-current').textContent =
-      `本地现有 ${value.currentEvents} 个事件、${value.currentSchedules} 个日程。`;
-    const counts = (label: string, count: BackupPreview['eventMerge']) =>
+    $('#backup-current').textContent = value.localError
+      ? `本地数据无法读取，无法统计或合并；可以确认覆盖，从此备份恢复。${value.localError}`
+      : `本地现有 ${value.currentEvents} 个事件、${value.currentSchedules} 个日程。`;
+    $('#backup-current').classList.toggle('backup-warning', !!value.localError);
+    $('.backup-merge-summary').hidden = !!value.localError;
+    const counts = (
+      label: string,
+      count: NonNullable<BackupPreview['eventMerge']>,
+    ) =>
       `${label}：新增 ${count.added}，跳过重复 ${count.skipped}，其中 ${count.conflicts} 项 ID 冲突将另存。`;
-    $('#backup-event-merge').textContent = counts('事件', value.eventMerge);
-    $('#backup-schedule-merge').textContent = counts(
-      '日程',
-      value.scheduleMerge,
-    );
+    $('#backup-event-merge').textContent = value.eventMerge
+      ? counts('事件', value.eventMerge)
+      : '';
+    $('#backup-schedule-merge').textContent = value.scheduleMerge
+      ? counts('日程', value.scheduleMerge)
+      : '';
     $('#backup-orphans').hidden = !value.orphanSchedules;
     $('#backup-orphans').textContent =
       `${value.orphanSchedules} 个日程引用的事件不在备份中；合并时会作为独立日程导入。`;
@@ -151,7 +161,7 @@ export function createBackupParser(options: {
     }
   }
   async function commit(mode: ImportMode) {
-    if (busy || !preview) return;
+    if (busy || !preview || (mode === 'merge' && preview.localError)) return;
     busy = true;
     controls();
     status(mode === 'merge' ? '正在合并导入…' : '正在覆盖数据…');
@@ -202,8 +212,9 @@ export function createBackupParser(options: {
   $('#backup-merge').addEventListener('click', () => void commit('merge'));
   $('#backup-replace').addEventListener('click', () => {
     if (!preview || busy) return;
-    $('#backup-replace-description').textContent =
-      `将本地 ${preview.currentEvents} 个事件、${preview.currentSchedules} 个日程替换为备份中的 ${preview.events} 个事件、${preview.schedules} 个日程。`;
+    $('#backup-replace-description').textContent = preview.localError
+      ? `本地数据无法读取。确认后将恢复为备份中的 ${preview.events} 个事件、${preview.schedules} 个日程，原损坏文件会保留。`
+      : `将本地 ${preview.currentEvents} 个事件、${preview.currentSchedules} 个日程替换为备份中的 ${preview.events} 个事件、${preview.schedules} 个日程。`;
     $('#backup-replace-confirm').hidden = false;
     controls();
     $('#backup-replace-confirm').scrollIntoView({ block: 'nearest' });

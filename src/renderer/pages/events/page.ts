@@ -65,7 +65,7 @@ export function createEventsPage(options: { changed(): void }) {
   function setControls() {
     document
       .querySelectorAll<HTMLButtonElement>(
-        '.new-event, .import-button, [data-export], #pin-event, #delete-event, #finish-event, #event-dates, #add-entry, .entry-edit, .entry-delete, .add-timeline, #save-entry, #save-dates, #confirm-delete',
+        '.new-event, [data-export], #pin-event, #delete-event, #finish-event, #event-dates, #add-entry, .entry-edit, .entry-delete, .add-timeline, #save-entry, #save-dates, #confirm-delete',
       )
       .forEach((button) => {
         button.disabled = !ready || actionBusy;
@@ -541,7 +541,7 @@ export function createEventsPage(options: { changed(): void }) {
       $('#empty-state h2').textContent = '暂时无法读取本地事件';
       $('#empty-state p').textContent = message(error);
       $('.empty-hint').textContent =
-        '原有数据不会被覆盖。修复文件后，请重新打开应用。';
+        '原文件已保留。可前往设置，解析 .jotlet 备份并确认覆盖恢复。';
       toast(message(error), true);
     }
   }
@@ -579,6 +579,15 @@ export function createEventsPage(options: { changed(): void }) {
 
     replaceEvents(items: EventRecord[], dataPath?: string) {
       events = items;
+      ready = true;
+      pending.clear();
+      clearTimeout(timer);
+      $('#empty-state h2').textContent = '一件事，一条时间线。';
+      $('#empty-state p').innerHTML =
+        '给正在发生的事一个名字，<br>把每一步进展，按时间串起来。';
+      $('.empty-hint').textContent = '本地保存 · 持续追加 · 随时回顾';
+      status('已保存到本机');
+      setControls();
       if (dataPath) $('#data-path').textContent = dataPath;
       changeFilter('all');
       selectEvent(visibleEvents()[0]?.id ?? null);

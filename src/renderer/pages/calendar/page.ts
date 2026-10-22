@@ -566,6 +566,10 @@ export function createCalendar(options: Options) {
     },
     replaceSchedules(items: Schedule[]) {
       schedules = items;
+      ready = true;
+      $('#calendar-error').hidden = true;
+      $('#calendar-error').textContent = '';
+      $<HTMLButtonElement>('#create-schedule').disabled = false;
       render();
     },
   };

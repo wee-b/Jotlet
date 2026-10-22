@@ -311,3 +311,110 @@ test('imported generations reopen from custom locations and from a fresh reinsta
     await f.dispose();
   }
 });
+
+for (const damaged of [
+  'notes.json',
+  'calendar.json',
+  'notes.json.journal',
+  'calendar.json.journal',
+]) {
+  test(`a valid backup can replace corrupt ${damaged} without losing the damaged files`, async () => {
+    const f = await fixture();
+    try {
+      await f.manager.events.save(event('old'));
+      await f.manager.schedules.save(schedule('old', 'old'));
+      const damagedPath = path.join(f.directory, damaged);
+      const corrupt = '{damaged data}\n';
+      await writeFile(damagedPath, corrupt);
+      const manager = new DataLocationManager(f.directory);
+      await manager.initialize();
+      const service = new BackupImport(manager);
+      const backup = makeJotletBackup(
+        [event('restored')],
+        [schedule('restored', 'restored')],
+      );
+      await writeFile(f.file, JSON.stringify(backup));
+      const preview = await service.analyze(f.file);
+      assert.match(preview.localError!, /读取失败/);
+      assert.equal(preview.currentEvents, null);
+      assert.equal(preview.currentSchedules, null);
+      assert.equal(preview.eventMerge, null);
+      assert.equal(preview.scheduleMerge, null);
+      assert.equal(preview.events, 1);
+      assert.equal(preview.schedules, 1);
+      service.discard(preview.token);
+      await assert.rejects(service.commit(preview.token, 'replace'), /已失效/);
+      assert.equal(await readFile(damagedPath, 'utf8'), corrupt);
+      const next = await service.analyze(f.file);
+      await assert.rejects(service.commit(next.token, 'merge'), /不能合并/);
+      assert.equal(await readFile(damagedPath, 'utf8'), corrupt);
+      const result = await service.commit(next.token, 'replace');
+      assert.deepEqual(result.events, backup.events);
+      assert.deepEqual(result.schedules, backup.schedules);
+      assert.equal(await readFile(damagedPath, 'utf8'), corrupt);
+      const restarted = new DataLocationManager(f.directory);
+      await restarted.initialize();
+      assert.deepEqual(await restarted.events.load(), backup.events);
+      assert.deepEqual(await restarted.schedules.load(), backup.schedules);
+      await restarted.events.save(event('after-recovery'));
+      await restarted.schedules.save(
+        schedule('after-recovery', 'after-recovery'),
+      );
+      assert.equal((await restarted.events.load()).length, 2);
+      assert.equal((await restarted.schedules.load()).length, 2);
+    } finally {
+      await f.dispose();
+    }
+  });
+}
+
+test('recovery refuses stale previews after an external repair and keeps a failed replacement retryable', async () => {
+  const f = await fixture();
+  try {
+    await mkdir(f.directory, { recursive: true });
+    const damaged = path.join(f.directory, 'notes.json');
+    await writeFile(damaged, '{broken');
+    const backup = makeJotletBackup([event('restored')], []);
+    await writeFile(f.file, JSON.stringify(backup));
+    const preview = await f.service.analyze(f.file);
+    await writeFile(damaged, '{changed');
+    await assert.rejects(
+      f.service.commit(preview.token, 'replace'),
+      /数据已变化/,
+    );
+    const next = await f.service.analyze(f.file);
+    const blocked = path.join(f.directory, 'active-dataset.json.tmp');
+    await mkdir(blocked);
+    await assert.rejects(f.service.commit(next.token, 'replace'));
+    assert.equal(await readFile(damaged, 'utf8'), '{changed');
+    // This directory is an empty fault-injection fixture under f.directory.
+    await rm(blocked, { recursive: true });
+    assert.deepEqual(
+      (await f.service.commit(next.token, 'replace')).events,
+      backup.events,
+    );
+  } finally {
+    await f.dispose();
+  }
+});
+
+test('corrupt local data does not bypass backup validation; empty valid backups can explicitly recover', async () => {
+  const f = await fixture();
+  try {
+    await mkdir(f.directory, { recursive: true });
+    const damaged = path.join(f.directory, 'calendar.json');
+    await writeFile(damaged, '{broken');
+    await writeFile(f.file, '{invalid backup');
+    await assert.rejects(f.service.analyze(f.file));
+    assert.equal(await readFile(damaged, 'utf8'), '{broken');
+    await writeFile(f.file, JSON.stringify(makeJotletBackup([], [])));
+    const preview = await f.service.analyze(f.file);
+    assert.ok(preview.localError);
+    const result = await f.service.commit(preview.token, 'replace');
+    assert.deepEqual(result.events, []);
+    assert.deepEqual(result.schedules, []);
+    assert.equal(await readFile(damaged, 'utf8'), '{broken');
+  } finally {
+    await f.dispose();
+  }
+});

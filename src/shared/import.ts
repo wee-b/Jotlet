@@ -18,10 +18,11 @@ export interface BackupPreview {
   entries: number;
   schedules: number;
   orphanSchedules: number;
-  currentEvents: number;
-  currentSchedules: number;
-  eventMerge: MergeCounts;
-  scheduleMerge: MergeCounts;
+  localError: string | null;
+  currentEvents: number | null;
+  currentSchedules: number | null;
+  eventMerge: MergeCounts | null;
+  scheduleMerge: MergeCounts | null;
   eventSamples: { title: string; entries: number }[];
   scheduleSamples: { title: string; start: string; linked: boolean }[];
 }

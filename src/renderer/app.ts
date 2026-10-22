@@ -47,9 +47,12 @@ export function startApp() {
   window.jotletBackup?.onOpenFile(
     (filePath) => void parser.open(filePath, true),
   );
-  void Promise.all([events.initialized, calendar.initialized]).then(() =>
-    window.jotletBackup?.ready(),
-  );
+  void Promise.all([events.initialized, calendar.initialized]).then(() => {
+    // Recovery must remain available even when either local dataset failed to load.
+    document.querySelector<HTMLButtonElement>('.import-button')!.disabled =
+      false;
+    return window.jotletBackup?.ready();
+  });
 
   for (const selector of ['.calendar-storage', '.sidebar-footer']) {
     const button = document.createElement('button');
