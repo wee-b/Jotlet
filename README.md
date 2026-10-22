@@ -41,7 +41,7 @@ Jotlet 是一个保存在本机的日历与事件追踪桌面应用。用日历�
 
 ## 下载与安装
 
-前往 [GitHub Releases](https://github.com/wee-b/Jotlet/releases/latest)，下载 `Jotlet-1.0.1-Setup.exe`。Release 同时提供 `SHA256SUMS.txt` 供校验。
+前往 [GitHub Releases](https://github.com/wee-b/Jotlet/releases/latest)，下载 `Jotlet-1.0.2-Setup.exe`。Release 同时提供 `SHA256SUMS.txt` 供校验。
 
 1. 关闭正在运行的 Jotlet，打开安装包。
 2. 首页选择「安装 Jotlet」或「卸载 Jotlet」。未检测到已安装版本时，卸载选项不可选；支持识别旧版 Squirrel 的卸载入口。
@@ -53,7 +53,7 @@ Jotlet 是一个保存在本机的日历与事件追踪桌面应用。用日历�
 校验安装包（PowerShell）：
 
 ```powershell
-Get-FileHash -Algorithm SHA256 '.\Jotlet-1.0.1-Setup.exe'
+Get-FileHash -Algorithm SHA256 '.\Jotlet-1.0.2-Setup.exe'
 ```
 
 将输出与 `SHA256SUMS.txt` 中同名文件的值比较。
