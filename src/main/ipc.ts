@@ -8,6 +8,7 @@ import { makeJotletBackup } from '../shared/backup';
 import { BackupImport } from './storage/backup-import';
 import { writeBackupFile } from './storage/backup-file';
 import type { DataLocationManager } from './storage/data-location';
+import { DataOperations } from './data-operations';
 
 export function registerHandlers(
   getWindow: () => BrowserWindow | null,
@@ -17,7 +18,7 @@ export function registerHandlers(
 ) {
   let store = dataLocation.events;
   let scheduleStore = dataLocation.schedules;
-  let dataQueue: Promise<unknown> = Promise.resolve();
+  const operations = new DataOperations();
   let fileDialogOpen = false;
   const handle = <T>(
     channel: string,
@@ -35,9 +36,7 @@ export function registerHandlers(
       try {
         const operation = channel.startsWith('window:')
           ? action(...args)
-          : dataQueue.then(() => action(...args));
-        if (!channel.startsWith('window:'))
-          dataQueue = operation.catch(() => {});
+          : operations.run(() => action(...args));
         return { ok: true, data: await operation };
       } catch (error) {
         return {
@@ -183,4 +182,5 @@ export function registerHandlers(
       fileDialogOpen = false;
     }
   });
+  return operations;
 }

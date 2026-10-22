@@ -9,6 +9,8 @@ import {
 import { createMainWindow } from './app-window';
 import { registerHandlers } from './ipc';
 import { backupFromArguments } from './open-backup';
+import { guardDataClose } from './data-operations';
+import type { DataOperations } from './data-operations';
 
 if (process.platform === 'win32')
   app.setAppUserModelId('com.squirrel.jotlet.jotlet');
@@ -17,6 +19,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 let mainWindow: BrowserWindow | null = null;
 let dataLocation: DataLocationManager;
 let installationHint: string | undefined;
+let dataOperations: DataOperations;
 const pendingFiles: string[] = [];
 const initialFile = backupFromArguments(process.argv, process.cwd());
 if (initialFile) pendingFiles.push(initialFile);
@@ -80,6 +83,12 @@ function createWindow() {
     rendererReady = false;
     mainWindow = null;
   });
+  guardDataClose(mainWindow, dataOperations, (error) => {
+    dialog.showErrorBox(
+      '保存失败，窗口已保持打开',
+      `请检查保存位置并重试，或从备份恢复。\n${error instanceof Error ? error.message : String(error)}`,
+    );
+  });
 }
 
 app
@@ -100,7 +109,7 @@ app
         await updateInstallationHint();
       }
     }
-    registerHandlers(
+    dataOperations = registerHandlers(
       () => mainWindow,
       dataLocation,
       updateInstallationHint,

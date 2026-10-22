@@ -15,6 +15,7 @@ import { createCalendarEvent, parseEvent } from '../src/shared/events.ts';
 import { parseSchedule } from '../src/shared/schedules.ts';
 import { makeJotletBackup } from '../src/shared/backup.ts';
 import type { Result } from '../src/shared/api.ts';
+import { DataOperations, guardDataClose } from '../src/main/data-operations.ts';
 
 // Exercise the real IPC handlers with native file dialogs replaced by a test
 // double. No Electron window, installed application, or user data is touched.
@@ -56,7 +57,27 @@ async function fixture(outputName = 'backup.jotlet') {
     filePath: path.join(directory, outputName),
   };
   const contents = { mainFrame: {} };
-  const window = { webContents: contents };
+  let onClose: (event: { preventDefault(): void }) => void = () => {};
+  const closeErrors: unknown[] = [];
+  const window = {
+    webContents: contents,
+    closed: false,
+    on(_event: 'close', handler: typeof onClose) {
+      onClose = handler;
+    },
+    isDestroyed() {
+      return this.closed;
+    },
+    close() {
+      let prevented = false;
+      onClose({
+        preventDefault() {
+          prevented = true;
+        },
+      });
+      if (!prevented) this.closed = true;
+    },
+  };
   const imports: Record<string, unknown> = {
     electron: {
       ipcMain: {
@@ -79,6 +100,7 @@ async function fixture(outputName = 'backup.jotlet') {
     '../shared/backup': { makeJotletBackup },
     './storage/backup-import': { BackupImport },
     './storage/backup-file': { writeBackupFile },
+    './data-operations': { DataOperations },
   };
   const module = { exports: {} as { registerHandlers: Function } };
   vm.runInNewContext(
@@ -93,17 +115,28 @@ async function fixture(outputName = 'backup.jotlet') {
     module,
     module.exports,
   );
-  module.exports.registerHandlers(
+  const operations = module.exports.registerHandlers(
     () => window,
     manager,
     async () => {},
     () => {},
   );
+  guardDataClose(window, operations, (error) => closeErrors.push(error));
   return {
     directory,
     manager,
     selected,
     dialogs,
+    window,
+    closeErrors,
+    invokeChannel: (
+      channel: string,
+      ...args: unknown[]
+    ): Promise<Result<unknown>> =>
+      handlers.get(channel)!(
+        { sender: contents, senderFrame: contents.mainFrame },
+        ...args,
+      ),
     invoke: async (...args: unknown[]): Promise<Result<string | null>> =>
       structuredClone(
         await handlers.get('events:export')!(
@@ -195,6 +228,38 @@ test('canceling the export dialog creates no backup and leaves the data intact',
     assert.deepEqual(await f.invoke(), { ok: true, data: null });
     await assert.rejects(fs.access(f.selected.filePath));
     assert.equal((await f.manager.events.load()).length, 1);
+  } finally {
+    await f.dispose();
+  }
+});
+
+test('closing during a real calendar save waits for durable storage before releasing the window', async () => {
+  const f = await fixture();
+  try {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const save = f.manager.schedules.save.bind(f.manager.schedules);
+    f.manager.schedules.save = async (value) => {
+      await gate;
+      return save(value);
+    };
+    const incoming = {
+      ...(await f.manager.schedules.load())[0],
+      title: '关闭前最后保存',
+    };
+    const saving = f.invokeChannel('calendar:save', incoming);
+    f.window.close();
+    assert.equal(f.window.closed, false);
+    release();
+    assert.equal((await saving).ok, true);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(f.window.closed, true);
+    assert.deepEqual(f.closeErrors, []);
+    const restarted = new DataLocationManager(path.join(f.directory, 'data'));
+    await restarted.initialize();
+    assert.equal((await restarted.schedules.load())[0].title, incoming.title);
   } finally {
     await f.dispose();
   }
