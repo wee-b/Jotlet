@@ -31,7 +31,7 @@ const api: EventsAPI = {
   load: () => ipcRenderer.invoke('events:load'),
   save: (event) => ipcRenderer.invoke('events:save', event),
   remove: (id) => ipcRenderer.invoke('events:remove', id),
-  exportEvents: (format) => ipcRenderer.invoke('events:export', format),
+  exportEvents: () => ipcRenderer.invoke('events:export'),
 };
 
 contextBridge.exposeInMainWorld('jotlet', api);

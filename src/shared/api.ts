@@ -36,9 +36,7 @@ export interface EventsAPI {
   load(): Promise<Result<{ events: EventRecord[]; dataPath: string }>>;
   save(event: EventRecord): Promise<Result<EventRecord>>;
   remove(id: string): Promise<Result<void>>;
-  exportEvents(
-    format: 'jotlet' | 'json' | 'markdown',
-  ): Promise<Result<string | null>>;
+  exportEvents(): Promise<Result<string | null>>;
 }
 
 export interface BackupAPI {

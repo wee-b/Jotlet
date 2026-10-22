@@ -16,14 +16,9 @@ export function bindDataActions(options: DataActions) {
   $('.import-button').addEventListener('click', () => void parser.open());
   document.querySelectorAll<HTMLElement>('[data-export]').forEach((button) =>
     button.addEventListener('click', () => {
-      $<HTMLDetailsElement>('.export-menu').open = false;
       void options.run(async () => {
         await options.flush();
-        const output = unwrap(
-          await api.exportEvents(
-            button.dataset.export as 'jotlet' | 'json' | 'markdown',
-          ),
-        );
+        const output = unwrap(await api.exportEvents());
         if (output) options.notify(`已导出到 ${output}`);
       });
     }),
@@ -34,9 +29,5 @@ export function bindDataActions(options: DataActions) {
   $('#close-info').addEventListener('click', () =>
     $<HTMLDialogElement>('#info-dialog').close(),
   );
-  document.addEventListener('click', (event) => {
-    if (!(event.target as Element).closest('.export-menu'))
-      $<HTMLDetailsElement>('.export-menu').open = false;
-  });
   return parser;
 }

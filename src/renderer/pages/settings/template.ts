@@ -58,14 +58,7 @@ export function settingsTemplate() {
         </div>
         <div id="settings-transfer-actions" class="settings-data-tools">
           <button class="import-button" disabled>${icon('import')} 解析与导入 <span>.jotlet</span></button>
-          <details class="export-menu">
-            <summary>${icon('export')} 导出 ${icon('down')}</summary>
-            <div class="dropdown">
-              <button data-export="jotlet"><strong>完整备份 · .jotlet</strong><span>保留事件、记录、日程及关联关系</span></button>
-              <button data-export="json"><strong>事件备份 · JSON</strong><span>仅供查看，仅包含事件与记录</span></button>
-              <button data-export="markdown"><strong>时间线文档 · Markdown</strong><span>按事件和时间顺序导出阅读副本</span></button>
-            </div>
-          </details>
+          <button class="export-button" data-export disabled>${icon('export')} 导出备份 <span>.jotlet</span></button>
           <button class="data-info">${icon('note')} 数据与备份 <span>↗</span></button>
         </div>
         <div class="settings-storage">

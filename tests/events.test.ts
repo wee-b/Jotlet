@@ -7,7 +7,6 @@ import {
   parseBackup,
   parseData,
   parseEvent,
-  toMarkdown,
 } from '../src/shared/events.ts';
 import type { EventRecord } from '../src/shared/events.ts';
 
@@ -159,18 +158,4 @@ test('two events with the same text but different occurrence times are distinct'
     ],
   });
   assert.equal(mergeEvents([event], [changed]).added, 1);
-});
-test('Markdown exports event boundaries and nodes in chronological order', () => {
-  const text = toMarkdown([
-    {
-      ...event,
-      title: '第一行\n第二行',
-      endedAt: later,
-      entries: [...event.entries].reverse(),
-    },
-  ]);
-  assert.ok(text.startsWith('# 第一行 第二行\n'));
-  assert.ok(text.includes(`结束时间：${later}`));
-  assert.ok(text.indexOf('最初的想法') < text.indexOf('完成第一版'));
-  assert.equal(toMarkdown([]), '');
 });

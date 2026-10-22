@@ -239,17 +239,3 @@ export function mergeEvents(
   }
   return { events, added: events.length - existing.length, skipped, conflicts };
 }
-export function toMarkdown(events: EventRecord[]): string {
-  return events
-    .map((event) => {
-      const title = event.title.trim().replace(/[\r\n]+/g, ' ') || '未命名事件';
-      const nodes = chronological(event.entries)
-        .map(
-          (entry, index) =>
-            `## ${index + 1}. ${entry.occurredAt}\n\n${entry.content}\n`,
-        )
-        .join('\n');
-      return `# ${title}\n\n开始时间：${event.startedAt}\n结束时间：${event.endedAt ?? '进行中'}\n\n${nodes}`;
-    })
-    .join('\n---\n\n');
-}
